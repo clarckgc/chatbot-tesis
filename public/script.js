@@ -8,24 +8,39 @@ let conversacionIniciada = false;
 let enviando = false;
 
 /* =========================
-   🔊 SONIDO (FIX REAL)
+   🔊 SONIDO (FIX DEFINITIVO)
 ========================= */
-const sonidoMensaje = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
+let sonidoMensaje;
 let sonidoHabilitado = false;
 
-// 🔥 desbloquear audio con interacción del usuario
+// 🔥 crear audio correctamente
+function inicializarSonido() {
+    sonidoMensaje = new Audio();
+    sonidoMensaje.src = "https://www.soundjay.com/buttons/sounds/button-3.mp3";
+    sonidoMensaje.preload = "auto";
+    sonidoMensaje.volume = 0.4; // 🔥 opcional (más suave)
+}
+
+// 🔥 desbloquear audio con interacción REAL
 function activarSonido() {
-    if (!sonidoHabilitado) {
-        sonidoMensaje.play().then(() => {
-            sonidoMensaje.pause();
-            sonidoMensaje.currentTime = 0;
-            sonidoHabilitado = true;
-        }).catch(() => {});
+    if (!sonidoHabilitado && sonidoMensaje) {
+        sonidoMensaje.play()
+            .then(() => {
+                sonidoMensaje.pause();
+                sonidoMensaje.currentTime = 0;
+                sonidoHabilitado = true;
+                console.log("🔊 Sonido habilitado");
+            })
+            .catch(() => {});
     }
 }
 
-// eventos que habilitan sonido
+// 🔥 inicializar
+inicializarSonido();
+
+// 🔥 eventos reales requeridos por navegador
 document.addEventListener("click", activarSonido);
+document.addEventListener("touchstart", activarSonido);
 document.addEventListener("keydown", activarSonido);
 
 /* =========================
@@ -121,8 +136,8 @@ function appendMessage(sender, text) {
     if (sender === 'bot') {
         msgDiv.innerHTML = formatearTextoBot(text);
 
-        // 🔊 SOLO SI YA SE HABILITÓ
-        if (sonidoHabilitado) {
+        // 🔊 reproducir SOLO si está listo
+        if (sonidoHabilitado && sonidoMensaje.readyState >= 2) {
             sonidoMensaje.currentTime = 0;
             sonidoMensaje.play().catch(() => {});
         }
@@ -157,7 +172,7 @@ function renderOptions(options) {
         btn.innerHTML = opt.texto;
 
         btn.onclick = () => {
-            activarSonido(); // 🔥 asegura sonido
+            activarSonido();
             conversacionIniciada = true;
             appendMessage('user', opt.texto);
             sendMessage(null, opt.id);
@@ -179,7 +194,7 @@ async function sendMessage(text, opcionId = null) {
     if (enviando) return;
     if (!text && !opcionId) return;
 
-    activarSonido(); // 🔥 clave
+    activarSonido();
 
     enviando = true;
     conversacionIniciada = true;
@@ -240,7 +255,7 @@ sendBtn.onclick = () => {
     const text = userInput.value.trim();
 
     if (text) {
-        activarSonido(); // 🔥 clave
+        activarSonido();
         appendMessage('user', text);
         sendMessage(text);
         userInput.value = '';
