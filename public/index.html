@@ -6,22 +6,20 @@
     <title>Chatbot Administrativo - Tesis</title>
     <link rel="stylesheet" href="style.css">
     <meta name="theme-color" content="#1a1a1a">
+
     <style>
-        /* Estilo para el contenedor de bloqueo dentro del chat */
         .admin-overlay {
-            display: none; /* Oculto por defecto */
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100%;
-            background: rgba(26, 26, 26, 0.95); /* Color negro translúcido */
+            background: rgba(26, 26, 26, 0.95);
             color: white;
             text-align: center;
             padding: 20px;
-            border-radius: 10px;
         }
 
-        /* Contenedor para opciones persistentes */
         .opciones-container {
             display: flex;
             flex-direction: column;
@@ -31,12 +29,19 @@
         }
     </style>
 </head>
+
 <body>
-    <div class="chat-container">
-        <header style="padding: 20px 15px;">
-            <h2 style="margin: 0; font-size: 1.3rem;">ASISTENTE UNIVERSITARIO IA</h2>
+
+    <!-- 🔥 BOTÓN FLOTANTE -->
+    <div id="chat-toggle">💬</div>
+
+    <!-- 🔥 CHAT FLOTANTE -->
+    <div class="chat-container" id="chat">
+
+        <header>
+            <h2>ASISTENTE UNIVERSITARIO IA</h2>
             
-            <div style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 15px;">
+            <div style="margin-top: 10px; display: flex; justify-content: center; gap: 10px;">
                 <span id="status" style="font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 3px 10px; border-radius: 20px;">
                     <span style="color: #00ff00;">●</span> Conectado
                 </span>
@@ -47,9 +52,10 @@
 
         <div id="chat-box" class="chat-box">
             <div id="admin-message-overlay" class="admin-overlay">
-                <h3 style="color: white; margin-bottom: 20px;">MODO ADMINISTRADOR</h3>
-                <p style="color: #cccccc; font-size: 0.9rem;">El chat está deshabilitado en este perfil para no sesgar las métricas de uso real.</p>
-                <p style="font-size: 0.8rem; color: #FFCC00; margin-top: 10px;">Acceda al panel de control para revisar el rendimiento del sistema.</p>
+                <h3>MODO ADMINISTRADOR</h3>
+                <p style="color: #ccc; font-size: 0.9rem;">
+                    El chat está deshabilitado en este perfil.
+                </p>
             </div>
         </div>
 
@@ -57,26 +63,33 @@
             <input type="text" id="user-input" placeholder="Escribe tu consulta aquí..." autocomplete="off">
             <button id="send-btn">Enviar</button>
         </div>
+
     </div>
 
+    <!-- 🔥 SCRIPT ADMIN -->
     <script>
-        // Lógica de Roles y Visibilidad CORREGIDA
         const params = new URLSearchParams(window.location.search);
         const isAdmin = params.get('role') === 'admin';
 
         if (isAdmin) {
-            // 1. Mostrar botón de métricas
             document.getElementById('admin-btn').style.display = 'inline-block';
-            
-            // 2. Ocultar el área de escritura
             document.getElementById('input-area').style.display = 'none';
-            
-            // 3. MOSTRAR LA CAPA NEGRA DENTRO DEL CONTENEDOR DEL CHAT
-            // (Ya no aplicamos estilos al body, sino al overlay interno)
+
             const overlay = document.getElementById('admin-message-overlay');
             overlay.style.display = 'flex';
         }
     </script>
+
+    <!-- 🔥 SCRIPT PARA ABRIR/CERRAR CHAT -->
+    <script>
+        const chatToggle = document.getElementById("chat-toggle");
+        const chat = document.getElementById("chat");
+
+        chatToggle.addEventListener("click", () => {
+            chat.classList.toggle("active");
+        });
+    </script>
+
     <script src="script.js"></script>
 </body>
 </html>
