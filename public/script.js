@@ -8,6 +8,15 @@ let conversacionIniciada = false;
 let enviando = false;
 
 /* =========================
+   🔥 MENSAJE UNIFICADO
+========================= */
+const MENSAJE_BIENVENIDA = `
+👋 Bienvenido al asistente universitario.<br><br>
+Ingresa tu código de alumno.<br><br>
+🧪 <b>Modo prueba:</b> usa el código <b>N00123456</b>
+`;
+
+/* =========================
    🔥 SCROLL SUAVE
 ========================= */
 function scrollToBottom() {
@@ -164,11 +173,19 @@ async function sendMessage(text, opcionId = null) {
 
         quitarTyping();
 
-        // 🔥 delay natural (UX PRO)
         setTimeout(() => {
 
             if (data.respuesta) {
-                appendMessage('bot', data.respuesta);
+
+                // 🔥 INTERCEPTAR MENSAJE DE LOGIN
+                if (
+                    data.respuesta.includes("Ingresa tu código") ||
+                    data.respuesta.toLowerCase().includes("código de alumno")
+                ) {
+                    appendMessage('bot', MENSAJE_BIENVENIDA);
+                } else {
+                    appendMessage('bot', data.respuesta);
+                }
             }
 
             if (data.opciones && data.opciones.length > 0) {
@@ -208,6 +225,6 @@ userInput.onkeypress = (e) => {
 ========================= */
 window.addEventListener("load", () => {
     setTimeout(() => {
-        appendMessage('bot', "👋 Hola, soy tu asistente universitario.<br><br>Ingresa tu código para comenzar.");
+        appendMessage('bot', MENSAJE_BIENVENIDA);
     }, 500);
 });
