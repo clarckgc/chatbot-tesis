@@ -92,33 +92,26 @@
     <script>
         const chatToggle = document.getElementById("chat-toggle");
         const chat = document.getElementById("chat");
-
-        chatToggle.addEventListener("click", () => {
-            chat.classList.toggle("active");
-        });
-    </script>
-
-    <!-- 🔥 PRO JS (AQUÍ VA EL PUNTO 2) -->
-    <script>
-        const chatBox = document.getElementById("chat-box");
         const notification = document.getElementById("chat-notification");
-        const typing = document.getElementById("typing-indicator");
 
         let chatAbierto = false;
 
         chatToggle.addEventListener("click", () => {
+            chat.classList.toggle("active");
             chatAbierto = !chatAbierto;
 
             if (chatAbierto) {
                 notification.classList.add("hidden");
             }
         });
+    </script>
 
-        function nuevaNotificacion() {
-            if (!chatAbierto) {
-                notification.classList.remove("hidden");
-            }
-        }
+    <!-- 🔥 PRO FIX (NO ROMPE FETCH) -->
+    <script>
+        const chatBox = document.getElementById("chat-box");
+        const typing = document.getElementById("typing-indicator");
+        const input = document.getElementById("user-input");
+        const sendBtn = document.getElementById("send-btn");
 
         function mostrarTyping() {
             typing.classList.remove("hidden");
@@ -130,22 +123,32 @@
             typing.classList.add("hidden");
         }
 
-        /* 🔥 Hook visual SIN tocar tu lógica */
-        const originalFetch = window.fetch;
+        function nuevaNotificacion() {
+            if (!chatAbierto) {
+                notification.classList.remove("hidden");
+            }
+        }
 
-        window.fetch = async (...args) => {
+        // 🔥 SOLO VISUAL (NO TOCA TU LÓGICA)
+        function hookEnvio() {
             mostrarTyping();
-
-            const res = await originalFetch(...args);
 
             setTimeout(() => {
                 ocultarTyping();
                 nuevaNotificacion();
                 chatBox.scrollTop = chatBox.scrollHeight;
-            }, 600);
+            }, 700);
+        }
 
-            return res;
-        };
+        // 🔥 ESCUCHA TU BOTÓN REAL
+        sendBtn.addEventListener("click", hookEnvio);
+
+        // 🔥 ESCUCHA ENTER
+        input.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                hookEnvio();
+            }
+        });
     </script>
 
     <script src="script.js"></script>
