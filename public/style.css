@@ -36,34 +36,6 @@ body {
     transform: scale(1.1);
 }
 
-/* 🔔 NOTIFICACIÓN */
-.chat-notification {
-    position: fixed;
-    bottom: 65px;
-    right: 15px;
-    background: red;
-    color: white;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: pulse 1.2s infinite;
-    z-index: 999;
-}
-
-.hidden {
-    display: none !important;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
-}
-
 /* 🔥 CHAT FLOTANTE */
 .chat-container { 
     position: fixed;
@@ -77,7 +49,7 @@ body {
     display: flex; 
     flex-direction: column; 
     overflow: hidden;
-    transform: translateY(30px) scale(0.95);
+    transform: translateY(20px);
     opacity: 0;
     pointer-events: none;
     transition: all 0.3s ease;
@@ -85,7 +57,7 @@ body {
 
 /* 🔥 CUANDO SE ABRE */
 .chat-container.active {
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     opacity: 1;
     pointer-events: auto;
 }
@@ -104,16 +76,6 @@ header h2 {
     font-size: 1rem; 
 }
 
-/* 🟢 STATUS ANIMADO */
-#status span {
-    animation: blink 1.5s infinite;
-}
-
-@keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-}
-
 /* CHAT */
 .chat-box { 
     flex: 1; 
@@ -122,7 +84,6 @@ header h2 {
     display: flex; 
     flex-direction: column; 
     gap: 10px; 
-    scroll-behavior: smooth;
 }
 
 /* MENSAJES */
@@ -131,8 +92,7 @@ header h2 {
     border-radius: 16px; 
     max-width: 85%; 
     font-size: 13px; 
-    animation: fadeUp 0.25s ease;
-    word-wrap: break-word;
+    animation: fadeIn 0.3s ease;
 }
 
 .user { 
@@ -145,34 +105,6 @@ header h2 {
     align-self: flex-start; 
     background: #fff; 
     border: 1px solid #eee;
-}
-
-/* ✍️ TYPING INDICATOR */
-.typing {
-    display: flex;
-    gap: 4px;
-    padding: 10px;
-    margin-left: 5px;
-}
-
-.typing span {
-    width: 6px;
-    height: 6px;
-    background: #999;
-    border-radius: 50%;
-    animation: bounce 1.2s infinite;
-}
-
-.typing span:nth-child(2) {
-    animation-delay: 0.2s;
-}
-.typing span:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
-@keyframes bounce {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1); }
 }
 
 /* INPUT */
@@ -188,7 +120,6 @@ input {
     padding: 10px; 
     border-radius: 20px; 
     border: 1px solid #ddd;
-    font-size: 13px;
 }
 
 button { 
@@ -220,14 +151,8 @@ button {
     background: #fffbef;
 }
 
-/* ANIMACIONES */
-@keyframes fadeUp {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* ANIMACIÓN */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
