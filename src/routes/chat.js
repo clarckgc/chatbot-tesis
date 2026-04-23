@@ -209,7 +209,7 @@ router.post('/', async (req, res) => {
             if (["gracias", "ok", "listo", "perfecto", "dale"].includes(texto)) {
                 return res.json({
                     respuesta: "😊 ¡Con gusto! ¿Necesitas algo más?",
-                    opciones: opcionesMenu
+                    opciones: null
                 });
             }
 
