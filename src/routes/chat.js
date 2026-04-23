@@ -1,8 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const { preguntarIA } = require('../services/openaiService');
-const db = require('../config/db'); 
+let db;
+
+try {
+    db = require('../config/db');
+} catch (e) {
+    db = null;
+}
+
 const conocimiento = require('../contexto_universidad');
+
+// 🔥 Detectar entorno (Render = producción)
+const ES_PRODUCCION = process.env.RENDER === 'true' || process.env.NODE_ENV === 'production';
+
+// 🔥 MODO DEMO AUTOMÁTICO
+const MODO_DEMO = ES_PRODUCCION || !db;
 
 /**
  * ESTADO DEL CHAT
@@ -10,55 +23,33 @@ const conocimiento = require('../contexto_universidad');
 let estadoChat = {
     tieneCodigo: false,
     codigoAlumno: '',
-    nombreAlumno: '', 
-    esperandoDetalleCaso: false,
-    ultimaActividad: Date.now()
+    nombreAlumno: '',
+    esperandoDetalleCaso: false
 };
 
 const opcionesMenu = [
-    { id: '1', texto: 'Estado de trámite 🖥️', clave: 'estado' },
-    { id: '2', texto: 'Información de Trámites 📅', clave: 'tramites' },
-    { id: '3', texto: 'Pagos y Pensiones 💰', clave: 'pagos' },
-    { id: '4', texto: 'Soporte Blackboard/IT 💻', clave: 'soporte' },
-    { id: '5', texto: 'Reingresos 🔄', clave: 'reingresos' },
-    { id: '6', texto: 'Registrar Solicitud/Queja 📝', clave: 'registro' }
+    { id: '1', texto: 'Estado de trámite 🖥️' },
+    { id: '2', texto: 'Información de Trámites 📅' },
+    { id: '3', texto: 'Pagos y Pensiones 💰' },
+    { id: '4', texto: 'Soporte Blackboard/IT 💻' },
+    { id: '5', texto: 'Reingresos 🔄' },
+    { id: '6', texto: 'Registrar Solicitud/Queja 📝' }
 ];
 
 const MSJ_RETORNO = " O escribe **'menú'** para volver.";
 
-/**
- * 🔥 FUNCIÓN: Convertir enlaces en hipervínculos automáticamente
- */
-const convertirLinks = (texto) => {
-    if (!texto) return texto;
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return texto.replace(urlRegex, (url) => {
-        return `<a href="${url}" target="_blank">${url}</a>`;
-    });
-};
+// =============================
+// 🔥 FUNCIONES DEMO (SIN MYSQL)
+// =============================
 
-/**
- * NLP - DETECCIÓN DE INTENCIÓN
- */
-const detectarIntencionIA = async (texto) => {
-    try {
-        const promptIntencion = `
-        Clasifica el mensaje del alumno en UNA de estas categorías:
-        TRAMITES, PAGOS, SOPORTE, REINGRESOS, REGISTRO, SALUDO, AGRADECIMIENTO, OTRO.
-        Mensaje: "${texto}"
-        Responde SOLO con la categoría.`;
-
-        const respuesta = await preguntarIA(promptIntencion, "Clasificador de intenciones");
-        return respuesta.toUpperCase().trim();
-    } catch {
-        return "OTRO";
+const validarAlumno = async (codigo) => {
+    if (MODO_DEMO) {
+        if (codigo === "N00123456") {
+            return { nombre: "Alumno Demo UPN" };
+        }
+        return null;
     }
-};
 
-/**
- * BD (con fallback)
- */
-const validarAlumnoEnBD = async (codigo) => {
     try {
         const [rows] = await db.execute(
             'SELECT nombre FROM alumnos WHERE codigo_alumno = ? LIMIT 1',
@@ -70,135 +61,140 @@ const validarAlumnoEnBD = async (codigo) => {
     }
 };
 
-const buscarTramiteEnBD = async (preguntaUsuario) => {
-    try {
-        const texto = preguntaUsuario.toLowerCase();
-        const [rows] = await db.execute(
-            `SELECT * FROM tramites_upn 
-             WHERE ? LIKE CONCAT('%', nombre_tramite, '%') 
-             OR nombre_tramite LIKE ? LIMIT 1`,
-            [texto, `%${texto}%`]
-        );
-        return rows.length > 0 ? rows[0] : null;
-    } catch {
-        return null;
+const obtenerTramites = async (codigo) => {
+    if (MODO_DEMO) {
+        return [
+            { tipo_tramite: "Retiro de ciclo", estado: "En proceso" },
+            { tipo_tramite: "Constancia de estudios", estado: "Aprobado" }
+        ];
     }
+
+    const [rows] = await db.execute(
+        'SELECT * FROM solicitudes_tramites WHERE codigo_alumno = ?',
+        [codigo]
+    );
+    return rows;
 };
 
-// ==========================================
-// CHAT
-// ==========================================
+const registrarCaso = async (codigo, detalle) => {
+    const nro = `CAS-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    if (!MODO_DEMO) {
+        await db.execute(
+            'INSERT INTO casos_reportados (nro_caso, codigo_alumno, detalle_incidente, estado_caso) VALUES (?, ?, ?, ?)',
+            [nro, codigo, detalle, 'Abierto']
+        );
+    }
+
+    return nro;
+};
+
+// =============================
+// 🔥 RUTA PRINCIPAL
+// =============================
 router.post('/', async (req, res) => {
+
     const { pregunta, opcionId } = req.body;
 
     try {
-        // =========================
-        // 1. IDENTIFICACIÓN
-        // =========================
+
+        // =============================
+        // 1. LOGIN
+        // =============================
         if (!estadoChat.tieneCodigo) {
             const entrada = pregunta?.trim().toUpperCase();
 
-            if (entrada && entrada.startsWith('N')) {
+            const alumno = await validarAlumno(entrada);
 
-                let alumno = await validarAlumnoEnBD(entrada);
-
-                // 🔥 MODO DEMO
-                if (!alumno) {
-                    alumno = { nombre: "Alumno Demo" };
-                }
-
+            if (alumno) {
+                estadoChat.tieneCodigo = true;
                 estadoChat.codigoAlumno = entrada;
                 estadoChat.nombreAlumno = alumno.nombre;
-                estadoChat.tieneCodigo = true;
 
                 return res.json({
-                    respuesta: `Código **${entrada}** verificado. ¡Bienvenido(a) ${estadoChat.nombreAlumno}!`,
+                    respuesta: `Código **${entrada}** verificado. ¡Bienvenido(a) ${alumno.nombre}!`,
                     opciones: opcionesMenu
                 });
             }
 
             return res.json({
-                respuesta: "Ingresa tu código de alumno (ej: N00123456)"
+                respuesta: "Ingresa tu código de alumno (usa N00123456 para demo)"
             });
         }
 
-        let respuestaFinal = null;
-        let mostrarMenu = false;
+        let respuestaFinal = "";
 
-        // =========================
-        // 2. OPCIONES
-        // =========================
+        // =============================
+        // 2. MENÚ
+        // =============================
         if (opcionId) {
             switch (opcionId) {
-                case '1':
-                    let solicitudes = [];
-                    try {
-                        const [rows] = await db.execute(
-                            'SELECT * FROM solicitudes_tramites WHERE codigo_alumno = ?',
-                            [estadoChat.codigoAlumno]
-                        );
-                        solicitudes = rows;
-                    } catch {
-                        solicitudes = [
-                            { tipo_tramite: "Retiro de curso", estado: "En proceso" }
-                        ];
-                    }
 
-                    respuestaFinal = solicitudes.length > 0
-                        ? "Tus trámites:\n" + solicitudes.map(s => `📌 ${s.tipo_tramite}: ${s.estado}`).join('\n')
-                        : "No tienes trámites registrados.";
+                case '1':
+                    const tramites = await obtenerTramites(estadoChat.codigoAlumno);
+                    respuestaFinal = tramites.map(t =>
+                        `📌 **${t.tipo_tramite}**: ${t.estado}`
+                    ).join('<br>');
+                    break;
+
+                case '2':
+                    respuestaFinal = "Puedes consultar trámites como retiro de ciclo, constancias o certificados.";
                     break;
 
                 case '3':
-                    respuestaFinal = `Ir a MiMundoUPN:<br>
-                    <a href="https://mimundo.upn.edu.pe" target="_blank">https://mimundo.upn.edu.pe</a>`;
+                    respuestaFinal = `Revisa tus pagos aquí:<br><br>
+                    👉 <a href="https://mimundo.upn.edu.pe" target="_blank">Ir a MiMundoUPN</a>`;
                     break;
 
-                default:
-                    mostrarMenu = true;
+                case '4':
+                    respuestaFinal = "Soporte: soporte.it@upn.edu.pe";
+                    break;
+
+                case '5':
+                    respuestaFinal = "Para reingresar, solicita 'Retorno a estudios'.";
+                    break;
+
+                case '6':
+                    estadoChat.esperandoDetalleCaso = true;
+                    respuestaFinal = "Describe tu problema para registrar un caso.";
+                    break;
             }
         }
 
-        // =========================
-        // 3. IA / TEXTO LIBRE
-        // =========================
-        if (!respuestaFinal && pregunta) {
+        // =============================
+        // 3. REGISTRO CASO
+        // =============================
+        else if (estadoChat.esperandoDetalleCaso && pregunta) {
 
-            const intencion = await detectarIntencionIA(pregunta);
+            const nro = await registrarCaso(estadoChat.codigoAlumno, pregunta);
 
-            if (intencion === 'SALUDO') {
-                respuestaFinal = "Hola 👋 ¿En qué puedo ayudarte?";
-                mostrarMenu = true;
-            } 
-            else if (intencion === 'AGRADECIMIENTO') {
-                respuestaFinal = "¡Con gusto! 😊";
-            } 
-            else {
-                const tramite = await buscarTramiteEnBD(pregunta);
-
-                if (tramite) {
-                    respuestaFinal = `
-                    ${tramite.nombre_tramite}<br>
-                    Requisitos: ${tramite.requisitos}<br>
-                    <a href="${tramite.enlace_portal}" target="_blank">Ver trámite</a>
-                    `;
-                } else {
-                    respuestaFinal = await preguntarIA(pregunta, conocimiento["1"]);
-                }
-            }
+            respuestaFinal = `Caso registrado: **${nro}**`;
+            estadoChat.esperandoDetalleCaso = false;
         }
 
-        // 🔥 CONVERTIR LINKS AUTOMÁTICOS
-        respuestaFinal = convertirLinks(respuestaFinal);
+        // =============================
+        // 4. IA
+        // =============================
+        else if (pregunta) {
+
+            if (pregunta.toLowerCase().includes("menu")) {
+                return res.json({
+                    respuesta: "Selecciona una opción:",
+                    opciones: opcionesMenu
+                });
+            }
+
+            respuestaFinal = await preguntarIA(pregunta, conocimiento["1"]);
+        }
 
         res.json({
-            respuesta: respuestaFinal || "No entendí tu consulta",
-            opciones: mostrarMenu ? opcionesMenu : null
+            respuesta: respuestaFinal + MSJ_RETORNO,
+            opciones: null
         });
 
     } catch (error) {
         console.error(error);
-        res.json({ respuesta: "Error en el sistema" });
+        res.json({ respuesta: "Error en el servidor." });
     }
 });
 
