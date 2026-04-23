@@ -11,21 +11,33 @@ try {
 
 const conocimiento = require('../contexto_universidad');
 
-// 🔥 Detectar entorno (Render = producción)
+// 🔥 Detectar entorno
 const ES_PRODUCCION = process.env.RENDER === 'true' || process.env.NODE_ENV === 'production';
-
-// 🔥 MODO DEMO AUTOMÁTICO
 const MODO_DEMO = ES_PRODUCCION || !db;
 
 /**
- * ESTADO DEL CHAT
+ * 🔥 ESTADO DEL CHAT
  */
 let estadoChat = {
     tieneCodigo: false,
     codigoAlumno: '',
     nombreAlumno: '',
-    esperandoDetalleCaso: false
+    esperandoDetalleCaso: false,
+    ultimoMensaje: Date.now()
 };
+
+// 🔥 1 minuto (como tú lo tenías)
+const TIEMPO_INACTIVIDAD = 60 * 1000;
+
+function resetChat() {
+    estadoChat = {
+        tieneCodigo: false,
+        codigoAlumno: '',
+        nombreAlumno: '',
+        esperandoDetalleCaso: false,
+        ultimoMensaje: Date.now()
+    };
+}
 
 const opcionesMenu = [
     { id: '1', texto: 'Estado de trámite 🖥️' },
@@ -39,7 +51,7 @@ const opcionesMenu = [
 const MSJ_RETORNO = " O escribe **'menú'** para volver.";
 
 // =============================
-// 🔥 FUNCIONES DEMO (SIN MYSQL)
+// 🔥 FUNCIONES DEMO
 // =============================
 
 const validarAlumno = async (codigo) => {
@@ -98,8 +110,22 @@ router.post('/', async (req, res) => {
 
     try {
 
+        const ahora = Date.now();
+
         // =============================
-        // 1. LOGIN
+        // 🔥 CONTROL DE INACTIVIDAD
+        // =============================
+        if (ahora - estadoChat.ultimoMensaje > TIEMPO_INACTIVIDAD) {
+            resetChat();
+            // ⚠️ IMPORTANTE:
+            // NO respondemos aquí → dejamos que continúe flujo normal
+            // para que se comporte como inicio real
+        }
+
+        estadoChat.ultimoMensaje = ahora;
+
+        // =============================
+        // 🔥 LOGIN (igual que inicio)
         // =============================
         if (!estadoChat.tieneCodigo) {
             const entrada = pregunta?.trim().toUpperCase();
@@ -125,7 +151,7 @@ router.post('/', async (req, res) => {
         let respuestaFinal = "";
 
         // =============================
-        // 2. MENÚ
+        // 🔥 MENÚ
         // =============================
         if (opcionId) {
             switch (opcionId) {
@@ -162,7 +188,7 @@ router.post('/', async (req, res) => {
         }
 
         // =============================
-        // 3. REGISTRO CASO
+        // 🔥 REGISTRO CASO
         // =============================
         else if (estadoChat.esperandoDetalleCaso && pregunta) {
 
@@ -173,17 +199,29 @@ router.post('/', async (req, res) => {
         }
 
         // =============================
-        // 4. IA
+        // 🔥 RESPUESTAS INTELIGENTES
         // =============================
         else if (pregunta) {
 
-            if (pregunta.toLowerCase().includes("menu")) {
+            const texto = pregunta.toLowerCase().trim();
+
+            // 🔥 AGRADECIMIENTOS
+            if (["gracias", "ok", "listo", "perfecto", "dale"].includes(texto)) {
+                return res.json({
+                    respuesta: "😊 ¡Con gusto! ¿Necesitas algo más?",
+                    opciones: opcionesMenu
+                });
+            }
+
+            // 🔥 MENÚ
+            if (texto.includes("menu") || texto.includes("menú")) {
                 return res.json({
                     respuesta: "Selecciona una opción:",
                     opciones: opcionesMenu
                 });
             }
 
+            // 🔥 IA SOLO COMO ÚLTIMO RECURSO
             respuestaFinal = await preguntarIA(pregunta, conocimiento["1"]);
         }
 
