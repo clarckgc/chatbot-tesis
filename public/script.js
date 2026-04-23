@@ -1,6 +1,7 @@
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
+const sonidoMensaje = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
 
 let avisoTimer;
 let cierreTimer;
@@ -98,7 +99,16 @@ function appendMessage(sender, text) {
     msgDiv.classList.add('message', sender);
 
     if (sender === 'bot') {
-        msgDiv.innerHTML = formatearTextoBot(text);
+    msgDiv.innerHTML = formatearTextoBot(text);
+
+    // 🔊 reproducir sonido
+    try {
+        sonidoMensaje.currentTime = 0;
+        sonidoMensaje.play();
+    } catch (e) {
+        // algunos navegadores bloquean autoplay
+    }
+    
     } else {
         msgDiv.textContent = text;
     }
