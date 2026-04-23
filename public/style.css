@@ -14,14 +14,14 @@ body {
     align-items: center; 
     height: 100vh; 
     margin: 0; 
-    padding: 10px; /* 🔥 mejora responsive */
+    padding: 10px;
 }
 
-/* 🔥 CAMBIO IMPORTANTE AQUÍ */
+/* 🔥 CONTENEDOR OPTIMIZADO */
 .chat-container { 
-    width: 90%;              /* antes: 420px */
-    max-width: 420px;       /* mantiene tamaño máximo */
-    min-width: 280px;       /* evita que se rompa en zoom alto */
+    width: 100%;
+    max-width: 360px;   /* 🔥 más compacto */
+    min-width: 280px;
     height: 85vh; 
     background: white; 
     border-radius: 12px; 
@@ -32,37 +32,40 @@ body {
     border: 1px solid #ddd;
 }
 
+/* HEADER MÁS COMPACTO */
 header { 
     background: var(--color-oscuro); 
     color: var(--color-primario); 
-    padding: 20px; 
+    padding: 14px; 
     text-align: center; 
-    border-bottom: 4px solid var(--color-primario);
+    border-bottom: 3px solid var(--color-primario);
 }
 
 header h2 { 
     margin: 0; 
-    font-size: 1.2rem; 
+    font-size: 1rem; 
     text-transform: uppercase; 
     letter-spacing: 1px; 
 }
 
+/* CHAT */
 .chat-box { 
     flex: 1; 
-    padding: 20px; 
+    padding: 14px;   /* 🔥 reducido */
     overflow-y: auto; 
     display: flex; 
     flex-direction: column; 
-    gap: 12px; 
+    gap: 10px; 
     background-image: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url('https://www.transparenttextures.com/patterns/cubes.png');
 }
 
+/* MENSAJES */
 .message { 
-    padding: 12px 16px; 
-    border-radius: 18px; 
+    padding: 10px 14px; 
+    border-radius: 16px; 
     max-width: 85%; 
-    font-size: 14px; 
-    line-height: 1.5;
+    font-size: 13px;   /* 🔥 más pequeño */
+    line-height: 1.4;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     word-wrap: break-word;
     overflow-wrap: break-word;
@@ -73,7 +76,7 @@ header h2 {
     background: var(--color-primario); 
     color: var(--color-oscuro); 
     font-weight: 500;
-    border-bottom-right-radius: 2px; 
+    border-bottom-right-radius: 4px; 
 }
 
 .bot { 
@@ -81,16 +84,17 @@ header h2 {
     background: #FFFFFF; 
     color: #333; 
     border: 1px solid #eee;
-    border-bottom-left-radius: 2px; 
+    border-bottom-left-radius: 4px; 
 }
 
+/* LINKS */
 .message a {
     color: #007bff;
     text-decoration: underline;
     word-break: break-all;
     display: inline-block;
     margin-top: 5px;
-    padding: 6px 10px;
+    padding: 5px 8px;
     background: #f0f8ff;
     border-radius: 6px;
     font-weight: 500;
@@ -107,9 +111,9 @@ header h2 {
 .menu-opciones-container {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin: 10px 0;
-    padding: 0 10px;
+    gap: 6px;
+    margin: 8px 0;
+    padding: 0 8px;
     align-self: flex-start;
     width: 90%;
     animation: fadeIn 0.4s ease;
@@ -119,10 +123,10 @@ header h2 {
     background-color: #ffffff;
     color: #333;
     border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 10px 15px;
+    border-radius: 8px;
+    padding: 8px 12px;
     text-align: left;
-    font-size: 13px;
+    font-size: 12px;
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -134,7 +138,7 @@ header h2 {
 .btn-opcion-upn:hover {
     background-color: #fffbef;
     border-color: var(--color-primario);
-    transform: translateX(5px);
+    transform: translateX(3px);
 }
 
 .btn-opcion-upn::after {
@@ -150,19 +154,20 @@ header h2 {
 
 /* INPUT */
 .input-area { 
-    padding: 15px; 
+    padding: 12px; 
     background: white;
     border-top: 1px solid #eee; 
     display: flex; 
-    gap: 10px; 
+    gap: 8px; 
 }
 
 input { 
     flex: 1; 
-    padding: 12px; 
+    padding: 10px; 
     border: 2px solid #eee; 
-    border-radius: 25px; 
+    border-radius: 20px; 
     outline: none; 
+    font-size: 13px;
     transition: border-color 0.3s;
 }
 
@@ -171,13 +176,14 @@ input:focus {
 }
 
 button { 
-    padding: 10px 20px; 
+    padding: 8px 16px; 
     background: var(--color-oscuro); 
     color: var(--color-primario); 
     border: none; 
-    border-radius: 25px; 
+    border-radius: 20px; 
     cursor: pointer; 
     font-weight: bold;
+    font-size: 13px;
     transition: transform 0.2s;
 }
 
@@ -186,12 +192,13 @@ button:hover {
     background: #000;
 }
 
+/* BOTÓN MÉTRICAS */
 .metrics-btn {
     color: #1A1A1A; 
     background-color: #FFCC00;
-    font-size: 0.8rem; 
+    font-size: 0.75rem; 
     text-decoration: none; 
-    padding: 6px 15px; 
+    padding: 5px 12px; 
     border-radius: 5px; 
     font-weight: bold;
     transition: all 0.3s ease;
