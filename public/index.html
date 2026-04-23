@@ -32,10 +32,13 @@
 
 <body>
 
-    <!-- 🔥 BOTÓN FLOTANTE -->
+    <!-- BOTÓN -->
     <div id="chat-toggle">💬</div>
 
-    <!-- 🔥 CHAT FLOTANTE -->
+    <!-- NOTIFICACIÓN -->
+    <div id="chat-notification" class="chat-notification hidden">!</div>
+
+    <!-- CHAT -->
     <div class="chat-container" id="chat">
 
         <header>
@@ -59,6 +62,11 @@
             </div>
         </div>
 
+        <!-- TYPING -->
+        <div id="typing-indicator" class="typing hidden">
+            <span></span><span></span><span></span>
+        </div>
+
         <div id="input-area" class="input-area">
             <input type="text" id="user-input" placeholder="Escribe tu consulta aquí..." autocomplete="off">
             <button id="send-btn">Enviar</button>
@@ -66,7 +74,7 @@
 
     </div>
 
-    <!-- 🔥 SCRIPT ADMIN -->
+    <!-- ADMIN -->
     <script>
         const params = new URLSearchParams(window.location.search);
         const isAdmin = params.get('role') === 'admin';
@@ -80,7 +88,7 @@
         }
     </script>
 
-    <!-- 🔥 SCRIPT PARA ABRIR/CERRAR CHAT -->
+    <!-- TOGGLE -->
     <script>
         const chatToggle = document.getElementById("chat-toggle");
         const chat = document.getElementById("chat");
@@ -88,6 +96,56 @@
         chatToggle.addEventListener("click", () => {
             chat.classList.toggle("active");
         });
+    </script>
+
+    <!-- 🔥 PRO JS (AQUÍ VA EL PUNTO 2) -->
+    <script>
+        const chatBox = document.getElementById("chat-box");
+        const notification = document.getElementById("chat-notification");
+        const typing = document.getElementById("typing-indicator");
+
+        let chatAbierto = false;
+
+        chatToggle.addEventListener("click", () => {
+            chatAbierto = !chatAbierto;
+
+            if (chatAbierto) {
+                notification.classList.add("hidden");
+            }
+        });
+
+        function nuevaNotificacion() {
+            if (!chatAbierto) {
+                notification.classList.remove("hidden");
+            }
+        }
+
+        function mostrarTyping() {
+            typing.classList.remove("hidden");
+            chatBox.appendChild(typing);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function ocultarTyping() {
+            typing.classList.add("hidden");
+        }
+
+        /* 🔥 Hook visual SIN tocar tu lógica */
+        const originalFetch = window.fetch;
+
+        window.fetch = async (...args) => {
+            mostrarTyping();
+
+            const res = await originalFetch(...args);
+
+            setTimeout(() => {
+                ocultarTyping();
+                nuevaNotificacion();
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 600);
+
+            return res;
+        };
     </script>
 
     <script src="script.js"></script>
