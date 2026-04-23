@@ -5,8 +5,44 @@ const sendBtn = document.getElementById('send-btn');
 let avisoTimer;
 let cierreTimer;
 let conversacionIniciada = false;
+let enviando = false;
 
-// --- 1. GESTIÓN DE INACTIVIDAD ---
+/* =========================
+   🔥 SCROLL SUAVE
+========================= */
+function scrollToBottom() {
+    chatBox.scrollTo({
+        top: chatBox.scrollHeight,
+        behavior: "smooth"
+    });
+}
+
+/* =========================
+   🔥 TYPING IA
+========================= */
+function mostrarTyping() {
+    const div = document.createElement("div");
+    div.className = "message bot typing";
+    div.id = "typing";
+
+    div.innerHTML = `
+        <span></span>
+        <span></span>
+        <span></span>
+    `;
+
+    chatBox.appendChild(div);
+    scrollToBottom();
+}
+
+function quitarTyping() {
+    const t = document.getElementById("typing");
+    if (t) t.remove();
+}
+
+/* =========================
+   🔥 1. INACTIVIDAD
+========================= */
 function iniciarTemporizadores() {
     if (!conversacionIniciada) return;
 
@@ -18,53 +54,57 @@ function iniciarTemporizadores() {
     }, 30000); 
 
     cierreTimer = setTimeout(() => {
-    const URL_FORM = "https://docs.google.com/forms/u/0/d/e/1FAIpQLSdOCCsw20B4grhmn3ggTSVkU0K8Uugg08FRFnEY5Pb5DioFGQ/formResponse?pli=1";
+        const URL_FORM = "https://docs.google.com/forms/u/0/d/e/1FAIpQLSdOCCsw20B4grhmn3ggTSVkU0K8Uugg08FRFnEY5Pb5DioFGQ/formResponse?pli=1";
 
-    appendMessage('bot', `
-        No hemos tenido respuesta para continuar con la comunicación.<br><br>
-        Cuando quieras retomar la conversación, aquí estaremos para ayudarte. 😊<br><br>
-        
-        📝 Antes de irte, tu opinión es muy importante:<br><br>
-        👉 <a href="${URL_FORM}" target="_blank">Evaluar el Chatbot</a>
-    `);
+        appendMessage('bot', `
+            No hemos tenido respuesta para continuar con la comunicación.<br><br>
+            Cuando quieras retomar la conversación, aquí estaremos para ayudarte. 😊<br><br>
+            
+            📝 Antes de irte, tu opinión es muy importante:<br><br>
+            👉 <a href="${URL_FORM}" target="_blank">Evaluar el Chatbot</a>
+        `);
 
-    fetch('/api/chat/reset', { method: 'POST' });
-    conversacionIniciada = false;
+        fetch('/api/chat/reset', { method: 'POST' });
+        conversacionIniciada = false;
 
-}, 60000);
+    }, 60000);
 }
 
-// --- 🔥 FUNCIÓN PARA FORMATEAR TEXTO DEL BOT ---
+/* =========================
+   🔥 FORMATEO BOT
+========================= */
 function formatearTextoBot(texto) {
     if (!texto) return '';
 
     return texto
-        .replace(/\n/g, '<br>') // saltos de línea
-        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>'); // negritas tipo markdown
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
 }
 
-// --- 2. RENDERIZAR MENSAJES ---
+/* =========================
+   🔥 2. MENSAJES
+========================= */
 function appendMessage(sender, text) {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message', sender);
 
     if (sender === 'bot') {
-        // 🔥 CLAVE: permite HTML + formatea texto
         msgDiv.innerHTML = formatearTextoBot(text);
     } else {
-        // 🔒 seguridad usuario
         msgDiv.textContent = text;
     }
 
     chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    scrollToBottom();
     
     if (!text.includes("¿Sigues ahí?") && !text.includes("No hemos tenido respuesta")) {
         iniciarTemporizadores();
     }
 }
 
-// --- 3. RENDERIZAR BOTONES ---
+/* =========================
+   🔥 3. OPCIONES
+========================= */
 function renderOptions(options) {
     if (!options || options.length === 0) return;
     
@@ -90,13 +130,18 @@ function renderOptions(options) {
     });
 
     chatBox.appendChild(optionsContainer);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    scrollToBottom();
 }
 
-// --- 4. ENVÍO DE DATOS ---
+/* =========================
+   🔥 4. ENVÍO
+========================= */
 async function sendMessage(text, opcionId = null) {
+
+    if (enviando) return;
     if (!text && !opcionId) return;
 
+    enviando = true;
     conversacionIniciada = true;
 
     let pregunta = text;
@@ -106,6 +151,8 @@ async function sendMessage(text, opcionId = null) {
 
     const payload = opcionId ? { opcionId } : { pregunta };
 
+    mostrarTyping();
+
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -114,24 +161,38 @@ async function sendMessage(text, opcionId = null) {
         });
         
         const data = await response.json();
-        
-        if (data.respuesta) {
-            appendMessage('bot', data.respuesta);
-        }
 
-        if (data.opciones && data.opciones.length > 0) {
-            renderOptions(data.opciones);
-        }
+        quitarTyping();
+
+        // 🔥 delay natural (UX PRO)
+        setTimeout(() => {
+
+            if (data.respuesta) {
+                appendMessage('bot', data.respuesta);
+            }
+
+            if (data.opciones && data.opciones.length > 0) {
+                renderOptions(data.opciones);
+            }
+
+        }, 400);
+
     } catch (error) {
+        quitarTyping();
+        appendMessage('bot', "⚠️ Error de conexión con el servidor.");
         console.error('Error:', error);
     }
+
+    enviando = false;
 }
 
-// --- 5. EVENTOS ---
+/* =========================
+   🔥 5. EVENTOS
+========================= */
 sendBtn.onclick = () => {
     const text = userInput.value.trim();
+
     if (text) {
-        conversacionIniciada = true;
         appendMessage('user', text);
         sendMessage(text);
         userInput.value = '';
@@ -141,3 +202,12 @@ sendBtn.onclick = () => {
 userInput.onkeypress = (e) => {
     if (e.key === 'Enter') sendBtn.click();
 };
+
+/* =========================
+   🔥 MENSAJE INICIAL
+========================= */
+window.addEventListener("load", () => {
+    setTimeout(() => {
+        appendMessage('bot', "👋 Hola, soy tu asistente universitario.<br><br>Ingresa tu código para comenzar.");
+    }, 500);
+});
