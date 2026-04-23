@@ -1,12 +1,32 @@
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
-const sonidoMensaje = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
 
 let avisoTimer;
 let cierreTimer;
 let conversacionIniciada = false;
 let enviando = false;
+
+/* =========================
+   🔊 SONIDO (FIX REAL)
+========================= */
+const sonidoMensaje = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
+let sonidoHabilitado = false;
+
+// 🔥 desbloquear audio con interacción del usuario
+function activarSonido() {
+    if (!sonidoHabilitado) {
+        sonidoMensaje.play().then(() => {
+            sonidoMensaje.pause();
+            sonidoMensaje.currentTime = 0;
+            sonidoHabilitado = true;
+        }).catch(() => {});
+    }
+}
+
+// eventos que habilitan sonido
+document.addEventListener("click", activarSonido);
+document.addEventListener("keydown", activarSonido);
 
 /* =========================
    🔥 MENSAJE UNIFICADO
@@ -99,16 +119,14 @@ function appendMessage(sender, text) {
     msgDiv.classList.add('message', sender);
 
     if (sender === 'bot') {
-    msgDiv.innerHTML = formatearTextoBot(text);
+        msgDiv.innerHTML = formatearTextoBot(text);
 
-    // 🔊 reproducir sonido
-    try {
-        sonidoMensaje.currentTime = 0;
-        sonidoMensaje.play();
-    } catch (e) {
-        // algunos navegadores bloquean autoplay
-    }
-    
+        // 🔊 SOLO SI YA SE HABILITÓ
+        if (sonidoHabilitado) {
+            sonidoMensaje.currentTime = 0;
+            sonidoMensaje.play().catch(() => {});
+        }
+
     } else {
         msgDiv.textContent = text;
     }
@@ -139,6 +157,7 @@ function renderOptions(options) {
         btn.innerHTML = opt.texto;
 
         btn.onclick = () => {
+            activarSonido(); // 🔥 asegura sonido
             conversacionIniciada = true;
             appendMessage('user', opt.texto);
             sendMessage(null, opt.id);
@@ -159,6 +178,8 @@ async function sendMessage(text, opcionId = null) {
 
     if (enviando) return;
     if (!text && !opcionId) return;
+
+    activarSonido(); // 🔥 clave
 
     enviando = true;
     conversacionIniciada = true;
@@ -187,7 +208,6 @@ async function sendMessage(text, opcionId = null) {
 
             if (data.respuesta) {
 
-                // 🔥 INTERCEPTAR MENSAJE DE LOGIN
                 if (
                     data.respuesta.includes("Ingresa tu código") ||
                     data.respuesta.toLowerCase().includes("código de alumno")
@@ -220,6 +240,7 @@ sendBtn.onclick = () => {
     const text = userInput.value.trim();
 
     if (text) {
+        activarSonido(); // 🔥 clave
         appendMessage('user', text);
         sendMessage(text);
         userInput.value = '';
