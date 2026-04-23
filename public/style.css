@@ -1,7 +1,7 @@
 /* Paleta de colores inspirada en la universidad */
 :root {
-    --color-primario: #FFCC00; /* Dorado/Amarillo institucional */
-    --color-oscuro: #1A1A1A;   /* Negro/Gris muy oscuro */
+    --color-primario: #FFCC00;
+    --color-oscuro: #1A1A1A;
     --color-fondo: #F4F4F4;
     --color-mensaje-usuario: #333333;
 }
@@ -14,18 +14,15 @@ body {
     align-items: center; 
     height: 100vh; 
     margin: 0; 
-
-    /* 🔥 mejora visual para que no se pegue a bordes */
-    padding: 10px;
+    padding: 10px; /* 🔥 mejora responsive */
 }
 
-/* 🔥 FIX PRINCIPAL: mantiene proporción tipo móvil */
+/* 🔥 CAMBIO IMPORTANTE AQUÍ */
 .chat-container { 
-    width: 100%;
-    max-width: 400px; /* 🔥 clave: evita que se ensanche en Render */
-    height: 85vh;
-    max-height: 700px;
-
+    width: 90%;              /* antes: 420px */
+    max-width: 420px;       /* mantiene tamaño máximo */
+    min-width: 280px;       /* evita que se rompa en zoom alto */
+    height: 85vh; 
     background: white; 
     border-radius: 12px; 
     box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
@@ -67,8 +64,6 @@ header h2 {
     font-size: 14px; 
     line-height: 1.5;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-
-    /* 🔥 FIX DESBORDE */
     word-wrap: break-word;
     overflow-wrap: break-word;
 }
@@ -89,7 +84,6 @@ header h2 {
     border-bottom-left-radius: 2px; 
 }
 
-/* 🔥 ESTILO PARA LINKS */
 .message a {
     color: #007bff;
     text-decoration: underline;
@@ -109,7 +103,7 @@ header h2 {
     text-decoration: none;
 }
 
-/* --- ESTILOS DEL SELECTOR DE OPCIONES --- */
+/* --- OPCIONES --- */
 .menu-opciones-container {
     display: flex;
     flex-direction: column;
@@ -153,8 +147,8 @@ header h2 {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
-/* --------------------------------------- */
 
+/* INPUT */
 .input-area { 
     padding: 15px; 
     background: white;
@@ -209,13 +203,4 @@ button:hover {
     background-color: #e6b800;
     transform: scale(1.05);
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-
-/* 🔥 RESPONSIVE (modo celular real) */
-@media (max-width: 480px) {
-    .chat-container {
-        max-width: 100%;
-        height: 100vh;
-        border-radius: 0;
-    }
 }
