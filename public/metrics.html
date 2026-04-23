@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard de Eficiencia</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="metrics-container" style="padding: 20px; max-width: 900px; margin: auto; text-align: center;">
+        <h2 style="margin-bottom: 30px;">📊 DASHBOARD DE EFICIENCIA ADMINISTRATIVA</h2>
+        
+        <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 40px;">
+            <div class="card" style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); flex: 1;">
+                <h4 style="color: #666; margin-bottom: 10px;">TOTAL CONSULTAS</h4>
+                <h1 id="total-consultas" style="font-size: 3rem; margin: 0;">0</h1>
+            </div>
+            <div class="card" style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); flex: 1;">
+                <h4 style="color: #666; margin-bottom: 10px;">PROMEDIO DE RESPUESTA</h4>
+                <h1 id="promedio-respuesta" style="font-size: 3rem; margin: 0;">0 ms</h1>
+            </div>
+        </div>
+
+        <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <canvas id="metricsChart"></canvas>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <a href="/" id="back-link" style="text-decoration: none; color: #333; font-weight: bold;">← Volver al Chat</a>
+        </div>
+    </div>
+
+    <script>
+        // 1. Lógica para mantener el rol de administrador al volver
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('from') === 'admin') {
+            document.getElementById('back-link').href = "/?role=admin";
+        }
+
+        async function loadMetrics() {
+            try {
+                // CAMBIO IMPORTANTE: Ahora la ruta es /api/chat/metricas y requiere el ?secret
+                const response = await fetch('/api/chat/metricas?secret=admin123');
+                const data = await response.json();
+
+                // Validamos que los datos existan para evitar "undefined"
+                const total = data.total_consultas ?? 0;
+                const promedio = Math.round(data.promedio_ms ?? 0);
+
+                document.getElementById('total-consultas').innerText = total;
+                document.getElementById('promedio-respuesta').innerText = `${promedio} ms`;
+
+                const ctx = document.getElementById('metricsChart').getContext('2d');
+                
+                // Destruir gráfico previo si existe para evitar errores de renderizado
+                if (window.myChart) {
+                    window.myChart.destroy();
+                }
+
+                window.myChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Tiempo Promedio de Respuesta (ms)'],
+                        datasets: [{
+                            label: 'Milisegundos',
+                            data: [promedio],
+                            backgroundColor: '#FFCC00',
+                            borderColor: '#333',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            } catch (error) {
+                console.error("Error cargando métricas:", error);
+            }
+        }
+
+        loadMetrics();
+    </script>
+</body>
+</html>
