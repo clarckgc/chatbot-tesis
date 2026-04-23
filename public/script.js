@@ -8,40 +8,6 @@ let conversacionIniciada = false;
 let enviando = false;
 
 /* =========================
-   🔊 SONIDO
-========================= */
-const sonidoMensaje = new Audio("https://www.soundjay.com/buttons/sounds/button-3.mp3");
-
-/* =========================
-   🔴 NOTIFICACIÓN
-========================= */
-function notificarSiCerrado() {
-    const chat = document.getElementById("chat");
-    const toggle = document.getElementById("chat-toggle");
-
-    if (!chat.classList.contains("active")) {
-
-        // evitar duplicados
-        if (document.getElementById("noti")) return;
-
-        const badge = document.createElement("div");
-        badge.id = "noti";
-        badge.innerText = "1";
-
-        badge.style.position = "absolute";
-        badge.style.top = "0";
-        badge.style.right = "0";
-        badge.style.background = "red";
-        badge.style.color = "white";
-        badge.style.borderRadius = "50%";
-        badge.style.padding = "3px 7px";
-        badge.style.fontSize = "10px";
-
-        toggle.appendChild(badge);
-    }
-}
-
-/* =========================
    🔥 MENSAJE UNIFICADO
 ========================= */
 const MENSAJE_BIENVENIDA = `
@@ -133,16 +99,6 @@ function appendMessage(sender, text) {
 
     if (sender === 'bot') {
         msgDiv.innerHTML = formatearTextoBot(text);
-
-        // 🔊 SONIDO
-        try {
-            sonidoMensaje.currentTime = 0;
-            sonidoMensaje.play();
-        } catch (e) {}
-
-        // 🔴 NOTIFICACIÓN
-        notificarSiCerrado();
-
     } else {
         msgDiv.textContent = text;
     }
@@ -221,6 +177,7 @@ async function sendMessage(text, opcionId = null) {
 
             if (data.respuesta) {
 
+                // 🔥 INTERCEPTAR MENSAJE DE LOGIN
                 if (
                     data.respuesta.includes("Ingresa tu código") ||
                     data.respuesta.toLowerCase().includes("código de alumno")
@@ -262,21 +219,6 @@ sendBtn.onclick = () => {
 userInput.onkeypress = (e) => {
     if (e.key === 'Enter') sendBtn.click();
 };
-
-/* =========================
-   🔥 LIMPIAR NOTIFICACIÓN AL ABRIR CHAT
-========================= */
-const chatToggle = document.getElementById("chat-toggle");
-const chat = document.getElementById("chat");
-
-if (chatToggle && chat) {
-    chatToggle.addEventListener("click", () => {
-        chat.classList.toggle("active");
-
-        const badge = document.getElementById("noti");
-        if (badge) badge.remove();
-    });
-}
 
 /* =========================
    🔥 MENSAJE INICIAL
