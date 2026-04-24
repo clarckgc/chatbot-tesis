@@ -2,7 +2,7 @@ const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 
-/* 🆕 NUEVO (no afecta nada existente) */
+/* 🆕 NUEVO: Manejo de imágenes */
 const imageInput = document.getElementById('image-input');
 const imageBtn = document.getElementById('image-btn');
 
@@ -10,9 +10,10 @@ let avisoTimer;
 let cierreTimer;
 let conversacionIniciada = false;
 let enviando = false;
+let archivoPendiente = null; // 🔥 Almacena la imagen antes de enviarla
 
 /* =========================
-   🔔 NOTIFICACIONES
+    🔔 NOTIFICACIONES
 ========================= */
 function solicitarPermisoNotificaciones() {
     if ("Notification" in window && Notification.permission !== "granted") {
@@ -34,7 +35,7 @@ function mostrarNotificacion(mensaje) {
 }
 
 /* =========================
-   🕒 FORMATO HORA
+    🕒 FORMATO HORA
 ========================= */
 function obtenerHora() {
     const ahora = new Date();
@@ -45,7 +46,7 @@ function obtenerHora() {
 }
 
 /* =========================
-   🔥 MENSAJE UNIFICADO
+    🔥 MENSAJE UNIFICADO
 ========================= */
 const MENSAJE_BIENVENIDA = `
 👋 Bienvenido al asistente universitario.<br><br>
@@ -54,7 +55,7 @@ Ingresa tu código de alumno.<br><br>
 `;
 
 /* =========================
-   🔥 SCROLL SUAVE
+    🔥 SCROLL SUAVE
 ========================= */
 function scrollToBottom() {
     chatBox.scrollTo({
@@ -64,7 +65,7 @@ function scrollToBottom() {
 }
 
 /* =========================
-   🔥 TYPING IA
+    🔥 TYPING IA
 ========================= */
 function mostrarTyping() {
     const div = document.createElement("div");
@@ -87,7 +88,7 @@ function quitarTyping() {
 }
 
 /* =========================
-   🔥 1. INACTIVIDAD
+    🔥 1. INACTIVIDAD
 ========================= */
 function iniciarTemporizadores() {
     if (!conversacionIniciada) return;
@@ -117,7 +118,7 @@ function iniciarTemporizadores() {
 }
 
 /* =========================
-   🔥 FORMATEO BOT
+    🔥 FORMATEO BOT
 ========================= */
 function formatearTextoBot(texto) {
     if (!texto) return '';
@@ -128,7 +129,7 @@ function formatearTextoBot(texto) {
 }
 
 /* =========================
-   💬 2. MENSAJES CON HORA
+    💬 2. MENSAJES CON HORA
 ========================= */
 function appendMessage(sender, text) {
     const msgDiv = document.createElement('div');
@@ -159,7 +160,7 @@ function appendMessage(sender, text) {
     }
 }
 
-/* 🆕 NUEVO: mostrar imagen (no toca appendMessage) */
+/* 🆕 NUEVO: mostrar imagen en burbuja */
 function appendImage(sender, imageUrl) {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message', sender);
@@ -176,7 +177,7 @@ function appendImage(sender, imageUrl) {
 }
 
 /* =========================
-   🔥 3. OPCIONES
+    🔥 3. OPCIONES
 ========================= */
 function renderOptions(options) {
     if (!options || options.length === 0) return;
@@ -207,44 +208,52 @@ function renderOptions(options) {
 }
 
 /* =========================
-   🔥 4. ENVÍO
+    🔥 4. ENVÍO UNIFICADO (TEXTO + IMAGEN)
 ========================= */
 async function sendMessage(text, opcionId = null) {
 
     if (enviando) return;
-    if (!text && !opcionId) return;
+    if (!text && !opcionId && !archivoPendiente) return;
 
     enviando = true;
     conversacionIniciada = true;
 
-    let pregunta = text;
-    if (text && (text.toLowerCase().includes("menú") || text.toLowerCase().includes("regresar"))) {
-        pregunta = "menú"; 
+    // 🔥 Usamos FormData para enviar texto y archivo juntos
+    const formData = new FormData();
+    
+    if (opcionId) {
+        formData.append('opcionId', opcionId);
+    } else {
+        let pregunta = text || "Analiza la imagen adjunta"; 
+        if (text && (text.toLowerCase().includes("menú") || text.toLowerCase().includes("regresar"))) {
+            pregunta = "menú"; 
+        }
+        formData.append('pregunta', pregunta);
     }
 
-    const payload = opcionId ? { opcionId } : { pregunta };
+    // 🔥 Si hay una imagen seleccionada, la adjuntamos
+    if (archivoPendiente) {
+        formData.append('file', archivoPendiente);
+    }
 
     mostrarTyping();
 
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            // Importante: No definir headers, FormData lo hace solo
+            body: formData 
         });
         
         const data = await response.json();
-
         quitarTyping();
 
+        // Limpiar archivo después del envío
+        archivoPendiente = null;
+
         setTimeout(() => {
-
             if (data.respuesta) {
-
-                if (
-                    data.respuesta.includes("Ingresa tu código") ||
-                    data.respuesta.toLowerCase().includes("código de alumno")
-                ) {
+                if (data.respuesta.includes("Ingresa tu código") || data.respuesta.toLowerCase().includes("código de alumno")) {
                     appendMessage('bot', MENSAJE_BIENVENIDA);
                 } else {
                     appendMessage('bot', data.respuesta);
@@ -261,19 +270,20 @@ async function sendMessage(text, opcionId = null) {
         quitarTyping();
         appendMessage('bot', "⚠️ Error de conexión con el servidor.");
         console.error('Error:', error);
+        archivoPendiente = null;
     }
 
     enviando = false;
 }
 
 /* =========================
-   🔥 5. EVENTOS
+    🔥 5. EVENTOS
 ========================= */
 sendBtn.onclick = () => {
     const text = userInput.value.trim();
 
-    if (text) {
-        appendMessage('user', text);
+    if (text || archivoPendiente) {
+        if (text) appendMessage('user', text);
         sendMessage(text);
         userInput.value = '';
     }
@@ -283,42 +293,37 @@ userInput.onkeypress = (e) => {
     if (e.key === 'Enter') sendBtn.click();
 };
 
-/* 🆕 NUEVO: botón imagen */
+/* 🆕 Botón para disparar el input de archivo */
 if (imageBtn) {
     imageBtn.onclick = () => imageInput.click();
 }
 
-/* 🆕 NUEVO: envío imagen */
+/* 🆕 Captura de imagen y preview */
 if (imageInput) {
-    imageInput.addEventListener('change', async () => {
+    imageInput.addEventListener('change', () => {
         const file = imageInput.files[0];
         if (!file) return;
 
-        // preview inmediato
+        archivoPendiente = file; // Guardar para el envío
+
         const reader = new FileReader();
         reader.onload = (e) => {
+            // A. Primero mostramos la imagen en el chat
             appendImage('user', e.target.result);
+
+            // B. 🔥 Después de cargar la imagen, el bot envía la confirmación
+            setTimeout(() => {
+                appendMessage('bot', "He recibido tu imagen. 😊 Escribe tu consulta para analizarla juntos o presiona **Enviar**.");
+            }, 500);
         };
         reader.readAsDataURL(file);
 
-        const formData = new FormData();
-        formData.append('imagen', file);
-
-        try {
-            await fetch('/upload', {
-                method: 'POST',
-                body: formData
-            });
-        } catch (err) {
-            appendMessage('bot', "⚠️ Error subiendo la imagen.");
-        }
-
-        imageInput.value = "";
+        imageInput.value = ""; // Limpiar input para permitir subir la misma imagen después
     });
 }
 
 /* =========================
-   🔥 MENSAJE INICIAL
+    🔥 MENSAJE INICIAL
 ========================= */
 window.addEventListener("load", () => {
     solicitarPermisoNotificaciones();

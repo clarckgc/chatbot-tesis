@@ -53,68 +53,44 @@ const opcionesMenu = [
 const MSJ_RETORNO = " O escribe **'menú'** para volver.";
 
 // =============================
-// 🔥 MULTER (UPLOAD SIN CARPETAS)
+// 🔥 MULTER CONFIG (MEMORIA)
 // =============================
 const storage = multer.memoryStorage();
-
 const upload = multer({
     storage,
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
 // =============================
-// 🔥 ENDPOINT IMAGENES
+// 🔥 ENDPOINT IMAGENES (Mantenido por compatibilidad)
 // =============================
 router.post('/upload', upload.single('image'), async (req, res) => {
     try {
-
         if (!req.file) {
-            return res.status(400).json({
-                ok: false,
-                mensaje: "No se recibió ninguna imagen"
-            });
+            return res.status(400).json({ ok: false, mensaje: "No se recibió ninguna imagen" });
         }
-
         const base64 = req.file.buffer.toString('base64');
         const mimeType = req.file.mimetype;
-
         const url = `data:${mimeType};base64,${base64}`;
-
-        return res.json({
-            ok: true,
-            url
-        });
-
+        return res.json({ ok: true, url });
     } catch (error) {
         console.error("Error upload:", error);
-
-        return res.status(500).json({
-            ok: false,
-            mensaje: "Error al subir imagen"
-        });
+        return res.status(500).json({ ok: false, mensaje: "Error al subir imagen" });
     }
 });
 
 // =============================
-// 🔥 FUNCIONES DEMO
+// 🔥 FUNCIONES AUXILIARES
 // =============================
 const validarAlumno = async (codigo) => {
     if (MODO_DEMO) {
-        if (codigo === "N00123456") {
-            return { nombre: "Alumno Demo UPN" };
-        }
+        if (codigo === "N00123456") return { nombre: "Alumno Demo UPN" };
         return null;
     }
-
     try {
-        const [rows] = await db.execute(
-            'SELECT nombre FROM alumnos WHERE codigo_alumno = ? LIMIT 1',
-            [codigo]
-        );
+        const [rows] = await db.execute('SELECT nombre FROM alumnos WHERE codigo_alumno = ? LIMIT 1', [codigo]);
         return rows.length > 0 ? rows[0] : null;
-    } catch {
-        return null;
-    }
+    } catch { return null; }
 };
 
 const obtenerTramites = async (codigo) => {
@@ -124,50 +100,39 @@ const obtenerTramites = async (codigo) => {
             { tipo_tramite: "Constancia de estudios", estado: "Aprobado" }
         ];
     }
-
-    const [rows] = await db.execute(
-        'SELECT * FROM solicitudes_tramites WHERE codigo_alumno = ?',
-        [codigo]
-    );
+    const [rows] = await db.execute('SELECT * FROM solicitudes_tramites WHERE codigo_alumno = ?', [codigo]);
     return rows;
 };
 
 const registrarCaso = async (codigo, detalle) => {
     const nro = `CAS-${Math.floor(100000 + Math.random() * 900000)}`;
-
     if (!MODO_DEMO) {
         await db.execute(
             'INSERT INTO casos_reportados (nro_caso, codigo_alumno, detalle_incidente, estado_caso) VALUES (?, ?, ?, ?)',
             [nro, codigo, detalle, 'Abierto']
         );
     }
-
     return nro;
 };
 
 // =============================
-// 🔥 RUTA PRINCIPAL
+// 🔥 RUTA PRINCIPAL (MODIFICADA PARA IA MULTIMODAL)
 // =============================
-router.post('/', async (req, res) => {
-
+// Se agrega upload.single('file') para capturar archivos adjuntos
+router.post('/', upload.single('file'), async (req, res) => {
     const { pregunta, opcionId } = req.body;
 
     try {
-
         const ahora = Date.now();
-
-        // 🔥 inactividad
         if (ahora - estadoChat.ultimoMensaje > TIEMPO_INACTIVIDAD) {
             resetChat();
         }
-
         estadoChat.ultimoMensaje = ahora;
 
         // =============================
         // 🔥 LOGIN
         // =============================
         if (!estadoChat.tieneCodigo) {
-
             const entrada = pregunta?.trim().toUpperCase();
             const alumno = await validarAlumno(entrada);
 
@@ -181,10 +146,7 @@ router.post('/', async (req, res) => {
                     opciones: opcionesMenu
                 });
             }
-
-            return res.json({
-                respuesta: "Ingresa tu código de alumno (usa N00123456 para demo)"
-            });
+            return res.json({ respuesta: "Ingresa tu código de alumno (usa N00123456 para demo)" });
         }
 
         let respuestaFinal = "";
@@ -194,55 +156,33 @@ router.post('/', async (req, res) => {
         // =============================
         if (opcionId) {
             switch (opcionId) {
-
                 case '1':
                     const tramites = await obtenerTramites(estadoChat.codigoAlumno);
-                    respuestaFinal = tramites.map(t =>
-                        `📌 **${t.tipo_tramite}**: ${t.estado}`
-                    ).join('<br>');
+                    respuestaFinal = tramites.map(t => `📌 **${t.tipo_tramite}**: ${t.estado}`).join('<br>');
                     break;
-
-                case '2':
-                    respuestaFinal = "Puedes consultar trámites como retiro de ciclo, constancias o certificados.";
-                    break;
-
-                case '3':
-                    respuestaFinal = `Revisa tus pagos aquí:<br><br>
-                    👉 <a href="https://mimundo.upn.edu.pe" target="_blank">Ir a MiMundoUPN</a>`;
-                    break;
-
-                case '4':
-                    respuestaFinal = "Soporte: soporte.it@upn.edu.pe";
-                    break;
-
-                case '5':
-                    respuestaFinal = "Para reingresar, solicita 'Retorno a estudios'.";
-                    break;
-
+                case '2': respuestaFinal = "Puedes consultar trámites como retiro de ciclo, constancias o certificados."; break;
+                case '3': respuestaFinal = `Revisa tus pagos aquí:<br><br>👉 <a href="https://mimundo.upn.edu.pe" target="_blank">Ir a MiMundoUPN</a>`; break;
+                case '4': respuestaFinal = "Soporte: soporte.it@upn.edu.pe"; break;
+                case '5': respuestaFinal = "Para reingresar, solicita 'Retorno a estudios'."; break;
                 case '6':
                     estadoChat.esperandoDetalleCaso = true;
                     respuestaFinal = "Describe tu problema para registrar un caso.";
                     break;
             }
         }
-
         // =============================
-        // 🔥 CASO
+        // 🔥 REGISTRO DE CASO
         // =============================
         else if (estadoChat.esperandoDetalleCaso && pregunta) {
-
             const nro = await registrarCaso(estadoChat.codigoAlumno, pregunta);
-
             respuestaFinal = `Caso registrado: **${nro}**`;
             estadoChat.esperandoDetalleCaso = false;
         }
-
         // =============================
-        // 🔥 IA
+        // 🔥 LÓGICA IA (TEXTO + IMAGEN)
         // =============================
-        else if (pregunta) {
-
-            const texto = pregunta.toLowerCase().trim();
+        else if (pregunta || req.file) {
+            const texto = pregunta ? pregunta.toLowerCase().trim() : "";
 
             if (["gracias", "ok", "listo", "perfecto", "dale"].includes(texto)) {
                 return res.json({
@@ -258,7 +198,19 @@ router.post('/', async (req, res) => {
                 });
             }
 
-            respuestaFinal = await preguntarIA(pregunta, conocimiento["1"]);
+            // Preparar objeto de imagen para la IA si existe
+            let imagenData = null;
+            if (req.file) {
+                imagenData = {
+                    inlineData: {
+                        data: req.file.buffer.toString('base64'),
+                        mimeType: req.file.mimetype
+                    }
+                };
+            }
+
+            // Enviamos la imagen como tercer parámetro a preguntarIA
+            respuestaFinal = await preguntarIA(pregunta || "Analiza esta imagen", conocimiento["1"], imagenData);
         }
 
         res.json({
@@ -267,7 +219,7 @@ router.post('/', async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("Error en ruta principal:", error);
         res.json({ respuesta: "Error en el servidor." });
     }
 });

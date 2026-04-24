@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-async function preguntarIA(pregunta, contexto) {
+async function preguntarIA(pregunta, contexto, imagenData = null) {
     try {
         // Creamos una base de conocimientos limpia para la IA
         const baseConocimiento = `
@@ -22,17 +22,38 @@ async function preguntarIA(pregunta, contexto) {
             REGLAS DE RESPUESTA:
             1. Responde con un tono amable, servicial y profesional.
             2. Proporciona la respuesta de forma redactada (párrafos), NO como una lista técnica.
-            3. Si el alumno pregunta por algo que no está en la información oficial, indícale que puede revisar el portal MiMundoUPN: ${contexto.enlace_portal}.
-            4. No menciones nombres de variables como 'undefined' o 'cronograma_pagos'. Habla de forma natural.
+            3. Si el alumno adjunta una imagen (como un recibo, captura de pantalla o carnet), analízala y relaciónala con la normativa de la universidad.
+            4. Si el alumno pregunta por algo que no está en la información oficial, indícale que puede revisar el portal MiMundoUPN: ${contexto.enlace_portal}.
+            5. No menciones nombres de variables internas. Habla de forma natural.
         `;
 
+        // Construcción del contenido del mensaje del usuario (Multimodal)
+        let userContent = [];
+
+        // Siempre añadimos el texto
+        userContent.push({
+            type: "text",
+            text: pregunta || "Analiza la imagen adjunta según el contexto de la universidad."
+        });
+
+        // Si viene una imagen desde el router, la añadimos al mensaje
+        if (imagenData && imagenData.inlineData) {
+            userContent.push({
+                type: "image_url",
+                image_url: {
+                    url: `data:${imagenData.inlineData.mimeType};base64,${imagenData.inlineData.data}`
+                }
+            });
+        }
+
         const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-            model: "gpt-3.5-turbo",
+            // IMPORTANTE: gpt-4o es el modelo que permite ver imágenes
+            model: "gpt-4o", 
             messages: [
                 { role: "system", content: systemPrompt },
-                { role: "user", content: pregunta }
+                { role: "user", content: userContent }
             ],
-            temperature: 0.4 // Temperatura baja para mayor precisión administrativa
+            temperature: 0.4
         }, {
             headers: {
                 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -42,7 +63,7 @@ async function preguntarIA(pregunta, contexto) {
 
         return response.data.choices[0].message.content;
     } catch (error) {
-        console.error("Error en OpenAI Service:", error.message);
+        console.error("Error en OpenAI Service:", error.response ? error.response.data : error.message);
         return "Lo siento, tuve un inconveniente al consultar la información. Por favor, intenta de nuevo en unos momentos.";
     }
 }
