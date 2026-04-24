@@ -2,6 +2,10 @@ const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 
+/* 🆕 NUEVO (no afecta nada existente) */
+const imageInput = document.getElementById('image-input');
+const imageBtn = document.getElementById('image-btn');
+
 let avisoTimer;
 let cierreTimer;
 let conversacionIniciada = false;
@@ -155,6 +159,22 @@ function appendMessage(sender, text) {
     }
 }
 
+/* 🆕 NUEVO: mostrar imagen (no toca appendMessage) */
+function appendImage(sender, imageUrl) {
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('message', sender);
+
+    const hora = obtenerHora();
+
+    msgDiv.innerHTML = `
+        <img src="${imageUrl}" class="img-chat">
+        <div class="hora">${hora}</div>
+    `;
+
+    chatBox.appendChild(msgDiv);
+    scrollToBottom();
+}
+
 /* =========================
    🔥 3. OPCIONES
 ========================= */
@@ -262,6 +282,40 @@ sendBtn.onclick = () => {
 userInput.onkeypress = (e) => {
     if (e.key === 'Enter') sendBtn.click();
 };
+
+/* 🆕 NUEVO: botón imagen */
+if (imageBtn) {
+    imageBtn.onclick = () => imageInput.click();
+}
+
+/* 🆕 NUEVO: envío imagen */
+if (imageInput) {
+    imageInput.addEventListener('change', async () => {
+        const file = imageInput.files[0];
+        if (!file) return;
+
+        // preview inmediato
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            appendImage('user', e.target.result);
+        };
+        reader.readAsDataURL(file);
+
+        const formData = new FormData();
+        formData.append('imagen', file);
+
+        try {
+            await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+        } catch (err) {
+            appendMessage('bot', "⚠️ Error subiendo la imagen.");
+        }
+
+        imageInput.value = "";
+    });
+}
 
 /* =========================
    🔥 MENSAJE INICIAL

@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { preguntarIA } = require('../services/openaiService');
+const multer = require('multer');
+
 let db;
 
 try {
@@ -26,7 +28,7 @@ let estadoChat = {
     ultimoMensaje: Date.now()
 };
 
-// 🔥 1 minuto (como tú lo tenías)
+// 🔥 1 minuto
 const TIEMPO_INACTIVIDAD = 60 * 1000;
 
 function resetChat() {
@@ -51,9 +53,51 @@ const opcionesMenu = [
 const MSJ_RETORNO = " O escribe **'menú'** para volver.";
 
 // =============================
+// 🔥 MULTER (UPLOAD SIN CARPETAS)
+// =============================
+const storage = multer.memoryStorage();
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
+// =============================
+// 🔥 ENDPOINT IMAGENES
+// =============================
+router.post('/upload', upload.single('image'), async (req, res) => {
+    try {
+
+        if (!req.file) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: "No se recibió ninguna imagen"
+            });
+        }
+
+        const base64 = req.file.buffer.toString('base64');
+        const mimeType = req.file.mimetype;
+
+        const url = `data:${mimeType};base64,${base64}`;
+
+        return res.json({
+            ok: true,
+            url
+        });
+
+    } catch (error) {
+        console.error("Error upload:", error);
+
+        return res.status(500).json({
+            ok: false,
+            mensaje: "Error al subir imagen"
+        });
+    }
+});
+
+// =============================
 // 🔥 FUNCIONES DEMO
 // =============================
-
 const validarAlumno = async (codigo) => {
     if (MODO_DEMO) {
         if (codigo === "N00123456") {
@@ -112,24 +156,19 @@ router.post('/', async (req, res) => {
 
         const ahora = Date.now();
 
-        // =============================
-        // 🔥 CONTROL DE INACTIVIDAD
-        // =============================
+        // 🔥 inactividad
         if (ahora - estadoChat.ultimoMensaje > TIEMPO_INACTIVIDAD) {
             resetChat();
-            // ⚠️ IMPORTANTE:
-            // NO respondemos aquí → dejamos que continúe flujo normal
-            // para que se comporte como inicio real
         }
 
         estadoChat.ultimoMensaje = ahora;
 
         // =============================
-        // 🔥 LOGIN (igual que inicio)
+        // 🔥 LOGIN
         // =============================
         if (!estadoChat.tieneCodigo) {
-            const entrada = pregunta?.trim().toUpperCase();
 
+            const entrada = pregunta?.trim().toUpperCase();
             const alumno = await validarAlumno(entrada);
 
             if (alumno) {
@@ -188,7 +227,7 @@ router.post('/', async (req, res) => {
         }
 
         // =============================
-        // 🔥 REGISTRO CASO
+        // 🔥 CASO
         // =============================
         else if (estadoChat.esperandoDetalleCaso && pregunta) {
 
@@ -199,13 +238,12 @@ router.post('/', async (req, res) => {
         }
 
         // =============================
-        // 🔥 RESPUESTAS INTELIGENTES
+        // 🔥 IA
         // =============================
         else if (pregunta) {
 
             const texto = pregunta.toLowerCase().trim();
 
-            // 🔥 AGRADECIMIENTOS
             if (["gracias", "ok", "listo", "perfecto", "dale"].includes(texto)) {
                 return res.json({
                     respuesta: "😊 ¡Con gusto! ¿Necesitas algo más?",
@@ -213,7 +251,6 @@ router.post('/', async (req, res) => {
                 });
             }
 
-            // 🔥 MENÚ
             if (texto.includes("menu") || texto.includes("menú")) {
                 return res.json({
                     respuesta: "Selecciona una opción:",
@@ -221,7 +258,6 @@ router.post('/', async (req, res) => {
                 });
             }
 
-            // 🔥 IA SOLO COMO ÚLTIMO RECURSO
             respuestaFinal = await preguntarIA(pregunta, conocimiento["1"]);
         }
 
