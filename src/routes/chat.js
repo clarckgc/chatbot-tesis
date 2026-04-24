@@ -62,6 +62,24 @@ const upload = multer({
 });
 
 // =============================
+// 🔥 ENDPOINT IMAGENES
+// =============================
+router.post('/upload', upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ ok: false, mensaje: "No se recibió ninguna imagen" });
+        }
+        const base64 = req.file.buffer.toString('base64');
+        const mimeType = req.file.mimetype;
+        const url = `data:${mimeType};base64,${base64}`;
+        return res.json({ ok: true, url });
+    } catch (error) {
+        console.error("Error upload:", error);
+        return res.status(500).json({ ok: false, mensaje: "Error al subir imagen" });
+    }
+});
+
+// =============================
 // 🔥 FUNCIONES AUXILIARES
 // =============================
 const validarAlumno = async (codigo) => {
@@ -112,9 +130,10 @@ router.post('/', upload.single('file'), async (req, res) => {
         estadoChat.ultimoMensaje = ahora;
 
         // =============================
-        // 🔥 BLOQUEO DE SEGURIDAD Y LOGIN
+        // 🔥 VALIDACIÓN DE AUTENTICACIÓN (BLOQUEO DE TEXTO E IMAGEN)
         // =============================
         if (!estadoChat.tieneCodigo) {
+            // Intentamos validar lo que haya en 'pregunta'
             const entrada = pregunta?.trim().toUpperCase() || "";
             const alumno = await validarAlumno(entrada);
 
@@ -129,9 +148,10 @@ router.post('/', upload.single('file'), async (req, res) => {
                 });
             }
 
-            // Si no está autenticado, cualquier mensaje o imagen devuelve el mensaje de bienvenida
+            // SI NO ES UN CÓDIGO VÁLIDO:
+            // Bloqueamos cualquier intento de subir imagen o hacer preguntas
             return res.json({ 
-                respuesta: "👋 Bienvenido al asistente universitario.\n\nIngresa tu código de alumno.\n\n🧪 **Modo prueba:** usa el código **N00123456**",
+                respuesta: "⚠️ Acceso restringido. Por favor, ingresa tu código de alumno para comenzar.\n\n**Modo prueba:** usa el código **N00123456**.",
                 opciones: null 
             });
         }
@@ -139,7 +159,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         let respuestaFinal = "";
 
         // =============================
-        // 🔥 LÓGICA DE MENÚ Y OPCIONES
+        // 🔥 MENÚ
         // =============================
         if (opcionId) {
             switch (opcionId) {
@@ -157,13 +177,16 @@ router.post('/', upload.single('file'), async (req, res) => {
                     break;
             }
         }
+        // =============================
+        // 🔥 REGISTRO DE CASO
+        // =============================
         else if (estadoChat.esperandoDetalleCaso && pregunta) {
             const nro = await registrarCaso(estadoChat.codigoAlumno, pregunta);
             respuestaFinal = `Caso registrado: **${nro}**`;
             estadoChat.esperandoDetalleCaso = false;
         }
         // =============================
-        // 🔥 LÓGICA IA (SOLO SI YA ESTÁ LOGUEADO)
+        // 🔥 LÓGICA IA (SOLO SI YA ESTÁ AUTENTICADO)
         // =============================
         else if (pregunta || req.file) {
             const texto = pregunta ? pregunta.toLowerCase().trim() : "";
@@ -182,6 +205,7 @@ router.post('/', upload.single('file'), async (req, res) => {
                 });
             }
 
+            // Preparar objeto de imagen para la IA
             let imagenData = null;
             if (req.file) {
                 imagenData = {
@@ -192,7 +216,6 @@ router.post('/', upload.single('file'), async (req, res) => {
                 };
             }
 
-            // Aquí evitamos cualquier mensaje intermedio y vamos directo a la IA
             respuestaFinal = await preguntarIA(pregunta || "Analiza esta imagen", conocimiento["1"], imagenData);
         }
 

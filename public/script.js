@@ -101,7 +101,7 @@ function iniciarTemporizadores() {
     }, 30000); 
 
     cierreTimer = setTimeout(() => {
-        const URL_FORM = "https://docs.google.com/forms/u/0/d/e/1FAIpQLSdOCCsw20B4grhmn3ggTSVkU0K8Uugg08FRFnEY5Pb5DioFGQ/formResponse?pli=1";
+        const URL_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSdwz-LSX_jKUlEg9MVv9rvKYVZhTsKQop709vmc1PjH5hVytQ/viewform?usp=dialog";
 
         appendMessage('bot', `
             No hemos tenido respuesta para continuar con la comunicación.<br><br>
