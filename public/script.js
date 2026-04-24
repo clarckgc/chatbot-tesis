@@ -8,40 +8,29 @@ let conversacionIniciada = false;
 let enviando = false;
 
 /* =========================
-   🔊 SONIDO (FIX DEFINITIVO)
+   🔔 NOTIFICACIONES
 ========================= */
-let sonidoMensaje;
-let sonidoHabilitado = false;
 
-// 🔥 crear audio correctamente
-function inicializarSonido() {
-    sonidoMensaje = new Audio();
-    sonidoMensaje.src = "https://www.soundjay.com/buttons/sounds/button-3.mp3";
-    sonidoMensaje.preload = "auto";
-    sonidoMensaje.volume = 0.4; // 🔥 opcional (más suave)
-}
-
-// 🔥 desbloquear audio con interacción REAL
-function activarSonido() {
-    if (!sonidoHabilitado && sonidoMensaje) {
-        sonidoMensaje.play()
-            .then(() => {
-                sonidoMensaje.pause();
-                sonidoMensaje.currentTime = 0;
-                sonidoHabilitado = true;
-                console.log("🔊 Sonido habilitado");
-            })
-            .catch(() => {});
+// 🔥 pedir permiso al usuario
+function solicitarPermisoNotificaciones() {
+    if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
     }
 }
 
-// 🔥 inicializar
-inicializarSonido();
-
-// 🔥 eventos reales requeridos por navegador
-document.addEventListener("click", activarSonido);
-document.addEventListener("touchstart", activarSonido);
-document.addEventListener("keydown", activarSonido);
+// 🔥 lanzar notificación
+function mostrarNotificacion(mensaje) {
+    if (
+        "Notification" in window &&
+        Notification.permission === "granted" &&
+        document.hidden // 🔥 SOLO si el usuario NO está viendo la pestaña
+    ) {
+        new Notification("Asistente UPN", {
+            body: mensaje.replace(/<[^>]*>/g, ""), // limpia HTML
+            icon: "https://cdn-icons-png.flaticon.com/512/4712/4712027.png"
+        });
+    }
+}
 
 /* =========================
    🔥 MENSAJE UNIFICADO
@@ -136,11 +125,8 @@ function appendMessage(sender, text) {
     if (sender === 'bot') {
         msgDiv.innerHTML = formatearTextoBot(text);
 
-        // 🔊 reproducir SOLO si está listo
-        if (sonidoHabilitado && sonidoMensaje.readyState >= 2) {
-            sonidoMensaje.currentTime = 0;
-            sonidoMensaje.play().catch(() => {});
-        }
+        // 🔔 NOTIFICACIÓN
+        mostrarNotificacion(text);
 
     } else {
         msgDiv.textContent = text;
@@ -172,7 +158,6 @@ function renderOptions(options) {
         btn.innerHTML = opt.texto;
 
         btn.onclick = () => {
-            activarSonido();
             conversacionIniciada = true;
             appendMessage('user', opt.texto);
             sendMessage(null, opt.id);
@@ -193,8 +178,6 @@ async function sendMessage(text, opcionId = null) {
 
     if (enviando) return;
     if (!text && !opcionId) return;
-
-    activarSonido();
 
     enviando = true;
     conversacionIniciada = true;
@@ -255,7 +238,6 @@ sendBtn.onclick = () => {
     const text = userInput.value.trim();
 
     if (text) {
-        activarSonido();
         appendMessage('user', text);
         sendMessage(text);
         userInput.value = '';
@@ -270,6 +252,8 @@ userInput.onkeypress = (e) => {
    🔥 MENSAJE INICIAL
 ========================= */
 window.addEventListener("load", () => {
+    solicitarPermisoNotificaciones(); // 🔥 pedir permiso
+
     setTimeout(() => {
         appendMessage('bot', MENSAJE_BIENVENIDA);
     }, 500);
