@@ -32,13 +32,13 @@
 
 <body>
 
-    <!-- 🔥 BOTÓN FLOTANTE -->
     <div id="chat-toggle">💬</div>
 
-    <!-- 🔥 CHAT FLOTANTE -->
     <div class="chat-container" id="chat">
 
         <header>
+            <div id="close-chat" onclick="document.getElementById('chat').classList.remove('active')">✕</div>
+
             <h2>ASISTENTE UNIVERSITARIO IA</h2>
             
             <div style="margin-top: 10px; display: flex; justify-content: center; gap: 10px;">
@@ -62,10 +62,8 @@
         <div id="input-area" class="input-area">
             <input type="text" id="user-input" placeholder="Escribe tu consulta aquí..." autocomplete="off">
 
-            <!-- 📎 NUEVO: input oculto para imagen -->
             <input type="file" id="image-input" accept="image/*" style="display:none;">
 
-            <!-- 📎 NUEVO: botón imagen (no afecta estilos existentes) -->
             <button id="image-btn">📎</button>
 
             <button id="send-btn">Enviar</button>
@@ -73,7 +71,6 @@
 
     </div>
 
-    <!-- 🔥 SCRIPT ADMIN -->
     <script>
         const params = new URLSearchParams(window.location.search);
         const isAdmin = params.get('role') === 'admin';
@@ -87,13 +84,12 @@
         }
     </script>
 
-    <!-- 🔥 SCRIPT PARA ABRIR/CERRAR CHAT -->
     <script>
         const chatToggle = document.getElementById("chat-toggle");
-        const chat = document.getElementById("chat");
+        const chatContainer = document.getElementById("chat");
 
         chatToggle.addEventListener("click", () => {
-            chat.classList.toggle("active");
+            chatContainer.classList.toggle("active");
         });
     </script>
 

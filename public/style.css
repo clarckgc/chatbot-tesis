@@ -50,7 +50,7 @@ body {
     box-shadow: 0 15px 40px rgba(0,0,0,0.25); 
     display: flex; 
     flex-direction: column; 
-    overflow: hidden; /* Evita que el contenido se salga de los bordes */
+    overflow: hidden; 
     transform: translateY(20px) scale(0.95);
     opacity: 0;
     pointer-events: none;
@@ -65,20 +65,35 @@ body {
 
 /* HEADER */
 header { 
-    flex-shrink: 0; /* No permite que el header se achique */
+    flex-shrink: 0; 
     background: linear-gradient(135deg, #1A1A1A, #000); 
     color: var(--color-primario); 
     padding: 16px; 
-    padding-top: calc(16px + env(safe-area-inset-top)); /* Ajuste para celular */
+    padding-top: calc(16px + env(safe-area-inset-top)); 
     text-align: center; 
     border-bottom: 3px solid var(--color-primario);
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    position: relative; /* Para posicionar el botón X */
 }
 
 header h2 { 
     margin: 0; 
     font-size: 1rem; 
     letter-spacing: 1px;
+}
+
+/* 🆕 BOTÓN CERRAR (Invisible por defecto, solo para móviles) */
+#close-chat {
+    display: none;
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--color-primario);
+    padding: 5px;
 }
 
 /* 🔥 ESTADO ANIMADO */
@@ -125,12 +140,12 @@ header h2 {
 
 /* 🔥 CORRECCIÓN PARA IMÁGENES */
 .img-chat {
-    max-width: 100%; /* No se sale de la burbuja */
-    max-height: 250px; /* Evita que la imagen sea demasiado alta */
+    max-width: 100%; 
+    max-height: 250px; 
     border-radius: 10px;
     margin-top: 5px;
     display: block;
-    object-fit: contain; /* Mantiene proporciones sin deformar */
+    object-fit: contain; 
 }
 
 /* USUARIO */
@@ -187,7 +202,7 @@ header h2 {
     transition: 0.2s;
 }
 
-/* 🔥 TYPING (IA pensando) */
+/* 🔥 TYPING */
 .typing {
     display: flex;
     gap: 5px;
@@ -210,9 +225,9 @@ header h2 {
     40% { transform: scale(1); }
 }
 
-/* INPUT CORREGIDO */
+/* INPUT AREA */
 .input-area { 
-    flex-shrink: 0; /* Asegura que la barra de texto nunca se mueva de su lugar */
+    flex-shrink: 0; 
     padding: 12px; 
     padding-bottom: calc(12px + env(safe-area-inset-bottom));
     border-top: 1px solid #eee; 
@@ -224,7 +239,7 @@ header h2 {
 
 input { 
     flex: 1; 
-    min-width: 0; /* Evita que el input empuje a los botones fuera de la pantalla */
+    min-width: 0; 
     padding: 10px; 
     border-radius: 20px; 
     border: 1px solid #ddd;
@@ -282,12 +297,17 @@ button:hover {
         width: 100% !important;
         right: 0 !important;
         bottom: 0 !important;
-        height: 100dvh !important; /* Altura dinámica para ocultar barras de navegación */
+        height: 100dvh !important; 
         border-radius: 0 !important;
-        z-index: 2000; /* Asegura que el chat esté por encima de todo */
+        z-index: 2000;
     }
 
-    /* 🔥 CORRECCIÓN: Oculta el botón circular cuando el chat está abierto */
+    /* 🔥 Mostramos el botón de cerrar solo en móvil */
+    #close-chat {
+        display: block;
+    }
+
+    /* 🔥 Oculta el botón flotante circular cuando el chat está activo */
     .chat-container.active + #chat-toggle {
         display: none !important;
     }
