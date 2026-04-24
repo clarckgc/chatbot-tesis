@@ -32,6 +32,23 @@
 
 <body>
 
+    <div class="welcome-screen">
+        <div class="welcome-content">
+            <h1>Bienvenido al Asistente Universitario IA</h1>
+            <p>Tu guía inteligente para consultas administrativas, trámites académicos y soporte universitario en tiempo real.</p>
+            <ul class="welcome-features">
+                <li>✅ Respuestas inmediatas 24/7</li>
+                <li>✅ Guía de trámites y procesos</li>
+                <li>✅ Soporte con documentos e imágenes</li>
+            </ul>
+        </div>
+        
+        <div class="chat-arrow-pointer">
+            <span>¡Haz clic aquí para iniciar!</span>
+            <div class="arrow">↓</div>
+        </div>
+    </div>
+
     <div id="chat-toggle">💬</div>
 
     <div class="chat-container" id="chat">
@@ -61,11 +78,8 @@
 
         <div id="input-area" class="input-area">
             <input type="text" id="user-input" placeholder="Escribe tu consulta aquí..." autocomplete="off">
-
             <input type="file" id="image-input" accept="image/*" style="display:none;">
-
             <button id="image-btn">📎</button>
-
             <button id="send-btn">Enviar</button>
         </div>
 

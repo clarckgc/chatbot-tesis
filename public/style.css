@@ -10,6 +10,88 @@ body {
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
     background-color: var(--color-fondo); 
     margin: 0;
+    overflow-x: hidden; /* Evita scroll horizontal por las animaciones */
+}
+
+/* 🔥 PANTALLA DE BIENVENIDA (Fondo del menú inicial) */
+.welcome-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    padding: 20px;
+    text-align: center;
+    background: radial-gradient(circle at center, #ffffff 0%, #e0e0e0 100%);
+}
+
+.welcome-content {
+    max-width: 600px;
+    animation: fadeInWelcome 1s ease-out;
+}
+
+.welcome-content h1 {
+    color: var(--color-oscuro);
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    border-bottom: 4px solid var(--color-primario);
+    display: inline-block;
+}
+
+.welcome-content p {
+    font-size: 1.2rem;
+    color: #444;
+    line-height: 1.6;
+}
+
+.welcome-features {
+    list-style: none;
+    padding: 0;
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.welcome-features li {
+    background: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    font-weight: 600;
+    color: var(--color-oscuro);
+}
+
+/* 🔥 FLECHA INDICADORA ANIMADA */
+.chat-arrow-pointer {
+    position: fixed;
+    bottom: 100px;
+    right: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    color: var(--color-oscuro);
+    font-weight: bold;
+    animation: bounceVertical 2s infinite;
+}
+
+.chat-arrow-pointer .arrow {
+    font-size: 2.5rem;
+    color: var(--color-primario);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+@keyframes bounceVertical {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-15px); }
+    60% { transform: translateY(-7px); }
+}
+
+@keyframes fadeInWelcome {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
 }
 
 /* 🔥 BOTÓN FLOTANTE PRO */
@@ -293,6 +375,10 @@ button:hover {
 
 /* 📱 RESPONSIVE - AJUSTADO PARA CELULAR */
 @media (max-width: 600px) {
+    .welcome-content h1 { font-size: 1.8rem; }
+    .welcome-content p { font-size: 1rem; }
+    .chat-arrow-pointer { right: 20px; bottom: 90px; }
+
     .chat-container {
         width: 100% !important;
         right: 0 !important;
@@ -309,10 +395,10 @@ button:hover {
         justify-content: center;
         width: 32px;
         height: 32px;
-        font-size: 18px; /* Ligeramente más pequeño para mejor proporción */
+        font-size: 18px; 
         line-height: 1;
-        background: rgba(255, 255, 255, 0.1); /* Fondo sutil para mejor visibilidad */
-        border-radius: 50%; /* Completamente redondeado */
+        background: rgba(255, 255, 255, 0.1); 
+        border-radius: 50%; 
         transition: background 0.2s;
     }
     
@@ -320,8 +406,9 @@ button:hover {
         background: rgba(255, 255, 255, 0.2);
     }
 
-    /* 🔥 Oculta el botón flotante circular cuando el chat está activo */
-    .chat-container.active + #chat-toggle {
+    /* 🔥 Oculta el botón flotante circular y la flecha cuando el chat está activo */
+    .chat-container.active + #chat-toggle,
+    .chat-container.active ~ .chat-arrow-pointer {
         display: none !important;
     }
 
