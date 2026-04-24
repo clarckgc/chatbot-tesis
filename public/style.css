@@ -298,15 +298,3 @@ button:hover {
     text-align: right;
     margin-top: 4px;
 }
-
-.img-chat {
-    max-width: 180px;
-    border-radius: 10px;
-    margin-top: 5px;
-}
-
-.hora {
-    font-size: 10px;
-    opacity: 0.6;
-    margin-top: 3px;
-}
