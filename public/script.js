@@ -216,9 +216,7 @@ async function sendMessage(text, opcionId = null) {
     if (!text && !opcionId && !archivoPendiente) return;
 
     enviando = true;
-    conversacionIniciada = true;
 
-    // 🔥 Usamos FormData para enviar texto y archivo juntos
     const formData = new FormData();
     
     if (opcionId) {
@@ -231,7 +229,6 @@ async function sendMessage(text, opcionId = null) {
         formData.append('pregunta', pregunta);
     }
 
-    // 🔥 Si hay una imagen seleccionada, la adjuntamos
     if (archivoPendiente) {
         formData.append('file', archivoPendiente);
     }
@@ -241,22 +238,26 @@ async function sendMessage(text, opcionId = null) {
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
-            // Importante: No definir headers, FormData lo hace solo
             body: formData 
         });
         
         const data = await response.json();
         quitarTyping();
 
-        // Limpiar archivo después del envío
+        // Limpiamos el archivo pendiente solo después de que se envió con éxito
         archivoPendiente = null;
 
         setTimeout(() => {
             if (data.respuesta) {
+                // SI EL SERVIDOR INDICA QUE FALTA AUTENTICACIÓN
                 if (data.respuesta.includes("Ingresa tu código") || data.respuesta.toLowerCase().includes("código de alumno")) {
                     appendMessage('bot', MENSAJE_BIENVENIDA);
+                    conversacionIniciada = false;
                 } else {
+                    // RESPUESTA NORMAL (Análisis o respuesta de texto)
                     appendMessage('bot', data.respuesta);
+                    conversacionIniciada = true;
+                    iniciarTemporizadores();
                 }
             }
 
@@ -270,7 +271,6 @@ async function sendMessage(text, opcionId = null) {
         quitarTyping();
         appendMessage('bot', "⚠️ Error de conexión con el servidor.");
         console.error('Error:', error);
-        archivoPendiente = null;
     }
 
     enviando = false;
@@ -293,32 +293,38 @@ userInput.onkeypress = (e) => {
     if (e.key === 'Enter') sendBtn.click();
 };
 
-/* 🆕 Botón para disparar el input de archivo */
 if (imageBtn) {
     imageBtn.onclick = () => imageInput.click();
 }
 
-/* 🆕 Captura de imagen y preview */
+/* 🆕 Captura de imagen: BLOQUEA SI NO ESTÁ AUTENTICADO */
 if (imageInput) {
     imageInput.addEventListener('change', () => {
         const file = imageInput.files[0];
         if (!file) return;
 
-        archivoPendiente = file; // Guardar para el envío
+        // 🔥 CRÍTICO: Si no hay conversación iniciada (autenticado), bloqueamos.
+        if (!conversacionIniciada) {
+            appendMessage('bot', MENSAJE_BIENVENIDA);
+            imageInput.value = ""; 
+            return;
+        }
+
+        archivoPendiente = file; 
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            // A. Primero mostramos la imagen en el chat
+            // 1. Mostrar la imagen en el chat
             appendImage('user', e.target.result);
 
-            // B. 🔥 Después de cargar la imagen, el bot envía la confirmación
+            // 2. Solo confirmación, espera a que el usuario escriba o de click en enviar
             setTimeout(() => {
-                appendMessage('bot', "He recibido tu imagen. 😊 Escribe tu consulta para analizarla juntos o presiona **Enviar**.");
+                appendMessage('bot', "He recibido tu imagen. 😊 Escribe tu consulta para analizarla juntos o presiona <b>Enviar</b>.");
             }, 500);
         };
         reader.readAsDataURL(file);
 
-        imageInput.value = ""; // Limpiar input para permitir subir la misma imagen después
+        imageInput.value = ""; 
     });
 }
 

@@ -62,27 +62,10 @@ const upload = multer({
 });
 
 // =============================
-// 🔥 ENDPOINT IMAGENES (Mantenido por compatibilidad)
-// =============================
-router.post('/upload', upload.single('image'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ ok: false, mensaje: "No se recibió ninguna imagen" });
-        }
-        const base64 = req.file.buffer.toString('base64');
-        const mimeType = req.file.mimetype;
-        const url = `data:${mimeType};base64,${base64}`;
-        return res.json({ ok: true, url });
-    } catch (error) {
-        console.error("Error upload:", error);
-        return res.status(500).json({ ok: false, mensaje: "Error al subir imagen" });
-    }
-});
-
-// =============================
 // 🔥 FUNCIONES AUXILIARES
 // =============================
 const validarAlumno = async (codigo) => {
+    if (!codigo) return null;
     if (MODO_DEMO) {
         if (codigo === "N00123456") return { nombre: "Alumno Demo UPN" };
         return null;
@@ -116,9 +99,8 @@ const registrarCaso = async (codigo, detalle) => {
 };
 
 // =============================
-// 🔥 RUTA PRINCIPAL (MODIFICADA PARA IA MULTIMODAL)
+// 🔥 RUTA PRINCIPAL
 // =============================
-// Se agrega upload.single('file') para capturar archivos adjuntos
 router.post('/', upload.single('file'), async (req, res) => {
     const { pregunta, opcionId } = req.body;
 
@@ -130,10 +112,10 @@ router.post('/', upload.single('file'), async (req, res) => {
         estadoChat.ultimoMensaje = ahora;
 
         // =============================
-        // 🔥 LOGIN
+        // 🔥 BLOQUEO DE SEGURIDAD Y LOGIN
         // =============================
         if (!estadoChat.tieneCodigo) {
-            const entrada = pregunta?.trim().toUpperCase();
+            const entrada = pregunta?.trim().toUpperCase() || "";
             const alumno = await validarAlumno(entrada);
 
             if (alumno) {
@@ -146,13 +128,18 @@ router.post('/', upload.single('file'), async (req, res) => {
                     opciones: opcionesMenu
                 });
             }
-            return res.json({ respuesta: "Ingresa tu código de alumno (usa N00123456 para demo)" });
+
+            // Si no está autenticado, cualquier mensaje o imagen devuelve el mensaje de bienvenida
+            return res.json({ 
+                respuesta: "👋 Bienvenido al asistente universitario.\n\nIngresa tu código de alumno.\n\n🧪 **Modo prueba:** usa el código **N00123456**",
+                opciones: null 
+            });
         }
 
         let respuestaFinal = "";
 
         // =============================
-        // 🔥 MENÚ
+        // 🔥 LÓGICA DE MENÚ Y OPCIONES
         // =============================
         if (opcionId) {
             switch (opcionId) {
@@ -170,16 +157,13 @@ router.post('/', upload.single('file'), async (req, res) => {
                     break;
             }
         }
-        // =============================
-        // 🔥 REGISTRO DE CASO
-        // =============================
         else if (estadoChat.esperandoDetalleCaso && pregunta) {
             const nro = await registrarCaso(estadoChat.codigoAlumno, pregunta);
             respuestaFinal = `Caso registrado: **${nro}**`;
             estadoChat.esperandoDetalleCaso = false;
         }
         // =============================
-        // 🔥 LÓGICA IA (TEXTO + IMAGEN)
+        // 🔥 LÓGICA IA (SOLO SI YA ESTÁ LOGUEADO)
         // =============================
         else if (pregunta || req.file) {
             const texto = pregunta ? pregunta.toLowerCase().trim() : "";
@@ -198,7 +182,6 @@ router.post('/', upload.single('file'), async (req, res) => {
                 });
             }
 
-            // Preparar objeto de imagen para la IA si existe
             let imagenData = null;
             if (req.file) {
                 imagenData = {
@@ -209,7 +192,7 @@ router.post('/', upload.single('file'), async (req, res) => {
                 };
             }
 
-            // Enviamos la imagen como tercer parámetro a preguntarIA
+            // Aquí evitamos cualquier mensaje intermedio y vamos directo a la IA
             respuestaFinal = await preguntarIA(pregunta || "Analiza esta imagen", conocimiento["1"], imagenData);
         }
 
