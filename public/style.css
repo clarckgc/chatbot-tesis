@@ -29,7 +29,7 @@ body {
     cursor: pointer;
     box-shadow: 0 8px 20px rgba(0,0,0,0.3);
     transition: all 0.3s ease;
-    z-index: 999;
+    z-index: 1000;
 }
 
 #chat-toggle:hover {
@@ -43,24 +43,20 @@ body {
     right: 20px;
     width: 360px;
     height: 520px;
-
-    /* 🔥 glassmorphism */
+    z-index: 999;
     background: rgba(255,255,255,0.95);
     backdrop-filter: blur(10px);
-
     border-radius: 16px; 
     box-shadow: 0 15px 40px rgba(0,0,0,0.25); 
     display: flex; 
     flex-direction: column; 
-    overflow: hidden;
-
+    overflow: hidden; /* Evita que el contenido se salga de los bordes */
     transform: translateY(20px) scale(0.95);
     opacity: 0;
     pointer-events: none;
     transition: all 0.3s ease;
 }
 
-/* 🔥 CUANDO SE ABRE */
 .chat-container.active {
     transform: translateY(0) scale(1);
     opacity: 1;
@@ -69,9 +65,11 @@ body {
 
 /* HEADER */
 header { 
+    flex-shrink: 0; /* No permite que el header se achique */
     background: linear-gradient(135deg, #1A1A1A, #000); 
     color: var(--color-primario); 
     padding: 16px; 
+    padding-top: calc(16px + env(safe-area-inset-top)); /* Ajuste para celular */
     text-align: center; 
     border-bottom: 3px solid var(--color-primario);
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
@@ -123,6 +121,16 @@ header h2 {
     animation: fadeIn 0.3s ease;
     position: relative;
     word-wrap: break-word;
+}
+
+/* 🔥 CORRECCIÓN PARA IMÁGENES */
+.img-chat {
+    max-width: 100%; /* No se sale de la burbuja */
+    max-height: 250px; /* Evita que la imagen sea demasiado alta */
+    border-radius: 10px;
+    margin-top: 5px;
+    display: block;
+    object-fit: contain; /* Mantiene proporciones sin deformar */
 }
 
 /* USUARIO */
@@ -179,10 +187,6 @@ header h2 {
     transition: 0.2s;
 }
 
-.message a:hover {
-    background: #e6f2ff;
-}
-
 /* 🔥 TYPING (IA pensando) */
 .typing {
     display: flex;
@@ -206,24 +210,25 @@ header h2 {
     40% { transform: scale(1); }
 }
 
-/* INPUT */
+/* INPUT CORREGIDO */
 .input-area { 
+    flex-shrink: 0; /* Asegura que la barra de texto nunca se mueva de su lugar */
     padding: 12px; 
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
     border-top: 1px solid #eee; 
     display: flex; 
+    align-items: center;
     gap: 8px; 
+    background: #fff;
 }
 
 input { 
     flex: 1; 
+    min-width: 0; /* Evita que el input empuje a los botones fuera de la pantalla */
     padding: 10px; 
     border-radius: 20px; 
     border: 1px solid #ddd;
     background: #f9f9f9;
-}
-
-input::placeholder {
-    color: #aaa;
 }
 
 input:focus {
@@ -231,8 +236,9 @@ input:focus {
     outline: none;
 }
 
-/* BOTÓN */
+/* BOTONES */
 button { 
+    flex-shrink: 0;
     padding: 8px 14px; 
     border-radius: 20px; 
     background: var(--color-oscuro); 
@@ -241,6 +247,7 @@ button {
     cursor: pointer;
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     transition: all 0.2s;
+    font-weight: bold;
 }
 
 button:hover {
@@ -263,27 +270,20 @@ button:hover {
     transition: all 0.2s;
 }
 
-.btn-opcion-upn:hover {
-    background: #fffbef;
-    transform: translateX(4px);
-}
-
-.btn-opcion-upn:active {
-    transform: scale(0.97);
-}
-
 /* ANIMACIÓN */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 📱 RESPONSIVE */
-@media (max-width: 480px) {
+/* 📱 RESPONSIVE - AJUSTADO PARA CELULAR */
+@media (max-width: 600px) {
     .chat-container {
-        width: 95%;
-        right: 2.5%;
-        height: 85vh;
+        width: 100% !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        height: 100dvh !important; /* Altura dinámica para ocultar barras de navegación */
+        border-radius: 0 !important;
     }
 
     #chat-toggle {
