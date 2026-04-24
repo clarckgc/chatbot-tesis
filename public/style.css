@@ -284,6 +284,12 @@ button:hover {
         bottom: 0 !important;
         height: 100dvh !important; /* Altura dinámica para ocultar barras de navegación */
         border-radius: 0 !important;
+        z-index: 2000; /* Asegura que el chat esté por encima de todo */
+    }
+
+    /* 🔥 CORRECCIÓN: Oculta el botón circular cuando el chat está abierto */
+    .chat-container.active + #chat-toggle {
+        display: none !important;
     }
 
     #chat-toggle {
