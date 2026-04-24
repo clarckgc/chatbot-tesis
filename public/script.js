@@ -1,35 +1,54 @@
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
+const chat = document.getElementById('chat');
+const badge = document.getElementById('chat-badge');
 
 let avisoTimer;
 let cierreTimer;
 let conversacionIniciada = false;
 let enviando = false;
+let mensajesNoLeidos = 0;
 
 /* =========================
    🔔 NOTIFICACIONES
 ========================= */
 
-// 🔥 pedir permiso al usuario
+// 🔥 pedir permiso
 function solicitarPermisoNotificaciones() {
     if ("Notification" in window && Notification.permission !== "granted") {
         Notification.requestPermission();
     }
 }
 
-// 🔥 lanzar notificación
+// 🔥 mostrar notificación
 function mostrarNotificacion(mensaje) {
     if (
         "Notification" in window &&
         Notification.permission === "granted" &&
-        document.hidden // 🔥 SOLO si el usuario NO está viendo la pestaña
+        document.hidden
     ) {
         new Notification("Asistente UPN", {
-            body: mensaje.replace(/<[^>]*>/g, ""), // limpia HTML
+            body: mensaje.replace(/<[^>]*>/g, ""),
             icon: "https://cdn-icons-png.flaticon.com/512/4712/4712027.png"
         });
     }
+}
+
+/* =========================
+   🔴 CONTADOR NO LEÍDOS
+========================= */
+function incrementarNoLeidos() {
+    if (!chat.classList.contains("active")) {
+        mensajesNoLeidos++;
+        badge.textContent = mensajesNoLeidos;
+        badge.style.display = "flex";
+    }
+}
+
+function resetearNoLeidos() {
+    mensajesNoLeidos = 0;
+    badge.style.display = "none";
 }
 
 /* =========================
@@ -125,8 +144,11 @@ function appendMessage(sender, text) {
     if (sender === 'bot') {
         msgDiv.innerHTML = formatearTextoBot(text);
 
-        // 🔔 NOTIFICACIÓN
+        // 🔔 notificación
         mostrarNotificacion(text);
+
+        // 🔴 contador
+        incrementarNoLeidos();
 
     } else {
         msgDiv.textContent = text;
@@ -248,11 +270,17 @@ userInput.onkeypress = (e) => {
     if (e.key === 'Enter') sendBtn.click();
 };
 
+// 🔥 resetear contador al abrir chat
+document.getElementById("chat-toggle").addEventListener("click", () => {
+    if (!chat.classList.contains("active")) return;
+    resetearNoLeidos();
+});
+
 /* =========================
    🔥 MENSAJE INICIAL
 ========================= */
 window.addEventListener("load", () => {
-    solicitarPermisoNotificaciones(); // 🔥 pedir permiso
+    solicitarPermisoNotificaciones();
 
     setTimeout(() => {
         appendMessage('bot', MENSAJE_BIENVENIDA);
