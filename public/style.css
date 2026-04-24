@@ -302,9 +302,22 @@ button:hover {
         z-index: 2000;
     }
 
-    /* 🔥 Mostramos el botón de cerrar solo en móvil */
+    /* 🔥 Mostramos el botón de cerrar mejorado solo en móvil */
     #close-chat {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        font-size: 18px; /* Ligeramente más pequeño para mejor proporción */
+        line-height: 1;
+        background: rgba(255, 255, 255, 0.1); /* Fondo sutil para mejor visibilidad */
+        border-radius: 50%; /* Completamente redondeado */
+        transition: background 0.2s;
+    }
+    
+    #close-chat:hover {
+        background: rgba(255, 255, 255, 0.2);
     }
 
     /* 🔥 Oculta el botón flotante circular cuando el chat está activo */
