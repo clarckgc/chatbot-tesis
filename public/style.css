@@ -63,24 +63,42 @@ body {
     color: var(--color-oscuro);
 }
 
-/* 🔥 FLECHA INDICADORA ANIMADA */
+/* 🔥 FLECHA INDICADORA MEJORADA Y ALINEADA */
 .chat-arrow-pointer {
     position: fixed;
-    bottom: 100px;
-    right: 40px;
+    bottom: 95px; /* justo encima del botón */
+    right: 25px; /* MISMO right que el botón */
+    width: 60px; /* mismo ancho del botón */
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 5px;
     color: var(--color-oscuro);
     font-weight: bold;
+    text-align: center;
     animation: bounceVertical 2s infinite;
+    z-index: 900; /* 🔥 CAMBIO: antes 1000 */
 }
 
+/* Texto */
+.chat-arrow-pointer span {
+    font-size: 12px;
+    width: 120px; /* evita que se corte raro */
+    transform: translateX(-30px); /* centra visualmente el texto */
+}
+
+/* Flecha */
 .chat-arrow-pointer .arrow {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     color: var(--color-primario);
     text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+/* 🔥 NUEVO: evita superposición cuando el chat está abierto */
+.chat-container.active ~ .chat-arrow-pointer {
+    opacity: 0;
+    pointer-events: none;
 }
 
 @keyframes bounceVertical {
@@ -377,7 +395,11 @@ button:hover {
 @media (max-width: 600px) {
     .welcome-content h1 { font-size: 1.8rem; }
     .welcome-content p { font-size: 1rem; }
-    .chat-arrow-pointer { right: 20px; bottom: 90px; }
+
+    .chat-arrow-pointer {
+        right: 15px;
+        bottom: 85px;
+    }
 
     .chat-container {
         width: 100% !important;
@@ -388,7 +410,6 @@ button:hover {
         z-index: 2000;
     }
 
-    /* 🔥 Mostramos el botón de cerrar mejorado solo en móvil */
     #close-chat {
         display: flex;
         align-items: center;
@@ -406,7 +427,6 @@ button:hover {
         background: rgba(255, 255, 255, 0.2);
     }
 
-    /* 🔥 Oculta el botón flotante circular y la flecha cuando el chat está activo */
     .chat-container.active + #chat-toggle,
     .chat-container.active ~ .chat-arrow-pointer {
         display: none !important;
