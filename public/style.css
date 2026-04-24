@@ -291,3 +291,10 @@ button:hover {
         bottom: 15px;
     }
 }
+
+.hora {
+    font-size: 10px;
+    color: #888;
+    text-align: right;
+    margin-top: 4px;
+}

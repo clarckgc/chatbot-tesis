@@ -10,26 +10,34 @@ let enviando = false;
 /* =========================
    🔔 NOTIFICACIONES
 ========================= */
-
-// 🔥 pedir permiso al usuario
 function solicitarPermisoNotificaciones() {
     if ("Notification" in window && Notification.permission !== "granted") {
         Notification.requestPermission();
     }
 }
 
-// 🔥 lanzar notificación
 function mostrarNotificacion(mensaje) {
     if (
         "Notification" in window &&
         Notification.permission === "granted" &&
-        document.hidden // 🔥 SOLO si el usuario NO está viendo la pestaña
+        document.hidden
     ) {
         new Notification("Asistente UPN", {
-            body: mensaje.replace(/<[^>]*>/g, ""), // limpia HTML
+            body: mensaje.replace(/<[^>]*>/g, ""),
             icon: "https://cdn-icons-png.flaticon.com/512/4712/4712027.png"
         });
     }
+}
+
+/* =========================
+   🕒 FORMATO HORA
+========================= */
+function obtenerHora() {
+    const ahora = new Date();
+    return ahora.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
 
 /* =========================
@@ -116,20 +124,27 @@ function formatearTextoBot(texto) {
 }
 
 /* =========================
-   🔥 2. MENSAJES
+   💬 2. MENSAJES CON HORA
 ========================= */
 function appendMessage(sender, text) {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message', sender);
 
-    if (sender === 'bot') {
-        msgDiv.innerHTML = formatearTextoBot(text);
+    const hora = obtenerHora();
 
-        // 🔔 NOTIFICACIÓN
+    if (sender === 'bot') {
+        msgDiv.innerHTML = `
+            ${formatearTextoBot(text)}
+            <div class="hora">${hora}</div>
+        `;
+
         mostrarNotificacion(text);
 
     } else {
-        msgDiv.textContent = text;
+        msgDiv.innerHTML = `
+            ${text}
+            <div class="hora">${hora}</div>
+        `;
     }
 
     chatBox.appendChild(msgDiv);
@@ -252,7 +267,7 @@ userInput.onkeypress = (e) => {
    🔥 MENSAJE INICIAL
 ========================= */
 window.addEventListener("load", () => {
-    solicitarPermisoNotificaciones(); // 🔥 pedir permiso
+    solicitarPermisoNotificaciones();
 
     setTimeout(() => {
         appendMessage('bot', MENSAJE_BIENVENIDA);
