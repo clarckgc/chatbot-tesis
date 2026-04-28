@@ -248,13 +248,25 @@ async function sendMessage(text, opcionId = null) {
         archivoPendiente = null;
 
         setTimeout(() => {
-            if (data.respuesta) {
-                // SI EL SERVIDOR INDICA QUE FALTA AUTENTICACIÓN
-                if (data.respuesta.includes("Ingresa tu código") || data.respuesta.toLowerCase().includes("código de alumno")) {
-                    appendMessage('bot', MENSAJE_BIENVENIDA);
+        if (data.respuesta) {
+
+                const respuestaLower = data.respuesta.toLowerCase();
+
+                // 🔥 MENSAJES DONDE AÚN NO ESTÁ AUTENTICADO
+                if (
+                    respuestaLower.includes("ingresa tu código") ||
+                    respuestaLower.includes("código de alumno") ||
+                    respuestaLower.includes("código correcto de prueba") ||
+                    respuestaLower.includes("código no válido") ||
+                    respuestaLower.includes("para iniciar la demostración")
+                ) {
+
+                    appendMessage('bot', data.respuesta);
                     conversacionIniciada = false;
+
                 } else {
-                    // RESPUESTA NORMAL (Análisis o respuesta de texto)
+
+                    // 🔥 RESPUESTA NORMAL (YA AUTENTICADO)
                     appendMessage('bot', data.respuesta);
                     conversacionIniciada = true;
                     iniciarTemporizadores();

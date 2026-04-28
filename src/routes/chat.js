@@ -50,7 +50,7 @@ const opcionesMenu = [
     { id: '6', texto: 'Registrar Solicitud/Queja 📝' }
 ];
 
-const MSJ_RETORNO = " O escribe **'menú'** para volver.";
+const MSJ_RETORNO = " o escribe **'menú'** para volver.";
 
 // =============================
 // 🔥 MULTER CONFIG (MEMORIA)
@@ -143,8 +143,12 @@ router.post('/', upload.single('file'), async (req, res) => {
                 estadoChat.nombreAlumno = alumno.nombre;
 
                 return res.json({
-                    respuesta: `Código **${entrada}** verificado. ¡Bienvenido(a) ${alumno.nombre}!`,
-                    opciones: opcionesMenu
+                    respuesta:
+                        `✅ Código **${entrada}** verificado correctamente.<br><br>` +
+                        `¡Bienvenido(a) **${alumno.nombre}**! 👋<br><br>` +
+                        `Estoy listo para ayudarte con tus consultas administrativas, académicas o de soporte.<br><br>` +
+                        `✍️ Escribe tu consulta directamente o escribe **menú** para ver las opciones disponibles.`,
+                    opciones: null
                 });
             }
 
@@ -229,5 +233,6 @@ router.post('/', upload.single('file'), async (req, res) => {
         res.json({ respuesta: "Error en el servidor." });
     }
 });
+
 
 module.exports = router;
