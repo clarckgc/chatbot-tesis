@@ -251,7 +251,7 @@ function renderOptions(options) {
 }
 
 /* =========================
-    🔥 4. ENVÍO UNIFICADO
+    🔥 4. ENVÍO UNIFICADO (OPTIMIZADO)
 ========================= */
 async function sendMessage(text, opcionId = null) {
 
@@ -259,24 +259,33 @@ async function sendMessage(text, opcionId = null) {
     if (!text && !opcionId && !archivoPendiente) return;
 
     enviando = true;
-
     const formData = new FormData();
 
     if (opcionId) {
         formData.append('opcionId', opcionId);
     } else {
-
         let pregunta = text || "Analiza la imagen adjunta";
 
         if (text) {
             const textoMin = text.toLowerCase();
 
-            if (textoMin.includes("menú") ||
-                textoMin.includes("regresar")) {
+            // OPTIMIZACIÓN: Interceptamos temas comunes para guiar a la IA
+            const temasClave = [
+                'pagos', 'bachiller', 'titulo', 'maestria', 'inasistencias', 
+                'procesos', 'cursos', 'malla', 'sunedu', 'reclamo'
+            ];
+
+            const temaDetectado = temasClave.find(tema => textoMin.includes(tema));
+            
+            if (temaDetectado) {
+                // Le damos una instrucción rápida y directa al backend
+                pregunta = `Responde brevemente sobre ${temaDetectado}: ${text}`;
+            }
+
+            if (textoMin.includes("menú") || textoMin.includes("regresar")) {
                 pregunta = "menú";
             }
         }
-
         formData.append('pregunta', pregunta);
     }
 
@@ -293,17 +302,12 @@ async function sendMessage(text, opcionId = null) {
         });
 
         const data = await response.json();
-
         quitarTyping();
-
         archivoPendiente = null;
 
         requestAnimationFrame(async () => {
-
             if (data.respuesta) {
-
                 const respuestaLower = data.respuesta.toLowerCase();
-
                 const requiereTextoDirecto =
                     respuestaLower.includes("ingresa tu código") ||
                     respuestaLower.includes("código de alumno") ||
@@ -314,20 +318,16 @@ async function sendMessage(text, opcionId = null) {
                 if (requiereTextoDirecto) {
                     appendMessage('bot', data.respuesta);
                     conversacionIniciada = false;
-
                 } else {
-
                     conversacionIniciada = true;
-
-                    /* 🔥 RESPUESTA EFECTO CHATGPT */
-                    await appendMessageTypingEffect(data.respuesta, 12);
+                    /* 🔥 RESPUESTA EFECTO CHATGPT RÁPIDO */
+                    await appendMessageTypingEffect(data.respuesta, 10); // Velocidad aumentada de 12 a 10
                 }
             }
 
             if (data.opciones && data.opciones.length > 0) {
                 renderOptions(data.opciones);
             }
-
         });
 
     } catch (error) {
@@ -344,11 +344,8 @@ async function sendMessage(text, opcionId = null) {
 ========================= */
 sendBtn.onclick = () => {
     const text = userInput.value.trim();
-
     if (text || archivoPendiente) {
-
         if (text) appendMessage('user', text);
-
         sendMessage(text);
         userInput.value = '';
     }
@@ -365,7 +362,6 @@ if (imageBtn) {
 /* 🆕 Captura de imagen */
 if (imageInput) {
     imageInput.addEventListener('change', () => {
-
         const file = imageInput.files[0];
         if (!file) return;
 
@@ -376,13 +372,10 @@ if (imageInput) {
         }
 
         archivoPendiente = file;
-
         const reader = new FileReader();
 
         reader.onload = (e) => {
-
             appendImage('user', e.target.result);
-
             requestAnimationFrame(() => {
                 appendMessage(
                     'bot',
@@ -392,7 +385,6 @@ if (imageInput) {
         };
 
         reader.readAsDataURL(file);
-
         imageInput.value = "";
     });
 }
@@ -401,11 +393,8 @@ if (imageInput) {
     🔥 MENSAJE INICIAL
 ========================= */
 window.addEventListener("load", () => {
-
     solicitarPermisoNotificaciones();
-
     requestAnimationFrame(() => {
         appendMessage('bot', MENSAJE_BIENVENIDA);
     });
-
 });
