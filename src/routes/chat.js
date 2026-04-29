@@ -33,7 +33,8 @@ function obtenerEstadoUsuario(req) {
     return req.session.estadoChat;
 }
 
-const TIEMPO_INACTIVIDAD = 60000; // 1 minuto
+// ACTUALIZADO: 3.5 minutos (210,000 ms) para sincronizar con el aviso de 3 min del frontend
+const TIEMPO_INACTIVIDAD = 210000; 
 
 function resetChat(req) {
     req.session.estadoChat = {
@@ -141,6 +142,9 @@ const registrarCaso = async (codigo, detalle) => {
    RESPUESTAS RÁPIDAS
 =================================== */
 function respuestaRapida(texto) {
+    if (texto.includes("retiro") && texto.includes("curso")) {
+        return "📚 Para realizar el **Retiro de Asignatura (Curso)**, debes ingresar a tu portal MiMundoUPN, sección 'Solicitudes' y elegir la opción correspondiente. Asegúrate de estar dentro del plazo del calendario académico.";
+    }
     if (texto.includes("pago") || texto.includes("pensiones")) {
         return `💰 Puedes revisar tus pagos y cronograma en:<br><br>👉 <a href="https://mimundo.upn.edu.pe" target="_blank">MiMundoUPN</a>`;
     }
@@ -148,7 +152,7 @@ function respuestaRapida(texto) {
         return "📄 Las constancias y certificados se solicitan desde tu portal estudiantil.";
     }
     if (texto.includes("retiro")) {
-        return "🔄 El retiro de ciclo se gestiona desde el portal del estudiante.";
+        return "🔄 El **Retiro de Ciclo** se gestiona desde el portal del estudiante. Recuerda que esto implica dejar todas tus asignaturas del semestre actual.";
     }
     if (texto.includes("blackboard")) {
         return "💻 Si tienes inconvenientes con Blackboard, contacta soporte.it@upn.edu.pe";
@@ -163,14 +167,14 @@ function respuestaRapida(texto) {
 }
 
 /* ===================================
-   RUTA PRINCIPAL (CORREGIDA)
+   RUTA PRINCIPAL
 =================================== */
 router.post('/', upload.single('file'), async (req, res) => {
     try {
         const estadoChat = obtenerEstadoUsuario(req);
         const ahora = Date.now();
 
-        // 1. Control de Inactividad (Pre-bloqueo)
+        // 1. Control de Inactividad
         if (ahora - estadoChat.ultimoMensaje > TIEMPO_INACTIVIDAD) {
             resetChat(req);
         }
@@ -181,7 +185,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         const historialRaw = req.body.historial || ''; 
         const texto = pregunta.trim().toLowerCase();
 
-        /* 🛡️ BLOQUEO DE LOGIN REFORZADO */
+        /* 🛡️ BLOQUEO DE LOGIN */
         if (!estadoChat.tieneCodigo) {
             const entrada = pregunta.trim().toUpperCase();
             const alumno = await validarAlumno(entrada);
@@ -201,7 +205,6 @@ router.post('/', upload.single('file'), async (req, res) => {
                 });
             }
 
-            // Bloqueo total: Si no hay código válido, no se procesa nada más
             return res.json({
                 respuesta: "⚠️ Tu sesión ha expirado o no te has identificado. Por favor, **ingresa tu código de alumno** para continuar.\n\n**Modo prueba:** usa el código **N00123456**.",
                 opciones: null
@@ -209,7 +212,6 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         /* ✅ FLUJO PARA USUARIOS LOGUEADOS */
-
         let historialArreglo = [];
         if (historialRaw) {
             try {
@@ -267,7 +269,7 @@ router.post('/', upload.single('file'), async (req, res) => {
             if (rapida) return res.json({ respuesta: rapida + MSJ_RETORNO, opciones: null });
         }
 
-        // 6. Consultar a la IA (Último recurso)
+        // 6. Consultar a la IA (CORREGIDO: Se quitó la duplicación del mensaje de retorno)
         let imagenData = null;
         if (req.file) {
             imagenData = { inlineData: { data: req.file.buffer.toString('base64'), mimeType: req.file.mimetype } };
@@ -281,7 +283,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         );
 
         res.json({
-            respuesta: respuestaIA + MSJ_RETORNO,
+            respuesta: respuestaIA, // La IA ya maneja su propio cierre natural
             opciones: null
         });
 

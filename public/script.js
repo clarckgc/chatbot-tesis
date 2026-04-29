@@ -91,7 +91,7 @@ function quitarTyping() {
 }
 
 /* =========================
-    🔥 1. INACTIVIDAD (SINCRONIZADO)
+    🔥 1. INACTIVIDAD (SINCRONIZADO A 3 MIN + 30 SEG)
 ========================= */
 function iniciarTemporizadores() {
     if (!conversacionIniciada) return;
@@ -99,10 +99,12 @@ function iniciarTemporizadores() {
     clearTimeout(avisoTimer);
     clearTimeout(cierreTimer);
 
+    // CORREGIDO: Primer aviso a los 3 minutos (180,000 ms)
     avisoTimer = setTimeout(() => {
         appendMessage('bot', "¿Sigues ahí? 👀 Estoy atento para continuar ayudándote.");
-    }, 30000);
+    }, 180000);
 
+    // CORREGIDO: Cierre a los 3.5 minutos (210,000 ms) para sincronizar con backend
     cierreTimer = setTimeout(() => {
         const URL_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSdwz-LSX_jKUlEg9MVv9rvKYVZhTsKQop709vmc1PjH5hVytQ/viewform?usp=dialog";
 
@@ -113,13 +115,13 @@ function iniciarTemporizadores() {
             👉 <a href="${URL_FORM}" target="_blank">Evaluar el Chatbot</a>
         `);
 
-        // Sincronizado con la nueva ruta del servidor
+        // Sincronizado con la ruta de reset del servidor
         fetch('/api/chat/reset', { method: 'POST' });
         
         conversacionIniciada = false;
         historialMensajes = []; 
 
-    }, 60000);
+    }, 210000);
 }
 
 /* =========================
@@ -160,6 +162,7 @@ function appendMessage(sender, text) {
     chatBox.appendChild(msgDiv);
     scrollToBottom();
 
+    // No reiniciar timers si es un mensaje de sistema de inactividad
     if (!text.includes("¿Sigues ahí?") &&
         !text.includes("No hemos tenido respuesta")) {
         iniciarTemporizadores();
