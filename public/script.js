@@ -91,7 +91,7 @@ function quitarTyping() {
 }
 
 /* =========================
-    🔥 1. INACTIVIDAD
+    🔥 1. INACTIVIDAD (SINCRONIZADO)
 ========================= */
 function iniciarTemporizadores() {
     if (!conversacionIniciada) return;
@@ -109,14 +109,15 @@ function iniciarTemporizadores() {
         appendMessage('bot', `
             No hemos tenido respuesta para continuar con la comunicación.<br><br>
             Cuando quieras retomar la conversación, aquí estaremos para ayudarte. 😊<br><br>
-
             📝 Antes de irte, tu opinión es muy importante:<br><br>
             👉 <a href="${URL_FORM}" target="_blank">Evaluar el Chatbot</a>
         `);
 
+        // Sincronizado con la nueva ruta del servidor
         fetch('/api/chat/reset', { method: 'POST' });
+        
         conversacionIniciada = false;
-        historialMensajes = []; // Limpiamos memoria al cerrar
+        historialMensajes = []; 
 
     }, 60000);
 }
@@ -243,7 +244,7 @@ function renderOptions(options) {
         btn.onclick = () => {
             conversacionIniciada = true;
             appendMessage('user', opt.texto);
-            sendMessage(null, opt.id, opt.texto); // Pasamos el texto para el historial
+            sendMessage(null, opt.id, opt.texto); 
             optionsContainer.remove();
         };
 
@@ -255,7 +256,7 @@ function renderOptions(options) {
 }
 
 /* =========================
-    🔥 4. ENVÍO UNIFICADO (OPTIMIZADO CON MEMORIA)
+    🔥 4. ENVÍO UNIFICADO
 ========================= */
 async function sendMessage(text, opcionId = null, textoOpcion = null) {
 
@@ -279,13 +280,11 @@ async function sendMessage(text, opcionId = null, textoOpcion = null) {
         }
         if (textoMin.includes("menú") || textoMin.includes("regresar")) {
             preguntaFinal = "menú";
-            historialMensajes = []; // Resetear memoria al volver al menú
+            historialMensajes = []; 
         }
     }
 
     formData.append('pregunta', preguntaFinal);
-    
-    // 🧠 AGREGAMOS EL HISTORIAL AL ENVÍO
     formData.append('historial', JSON.stringify(historialMensajes));
 
     if (archivoPendiente) {
@@ -320,11 +319,9 @@ async function sendMessage(text, opcionId = null, textoOpcion = null) {
             } else {
                 conversacionIniciada = true;
                 
-                // 🧠 GUARDAMOS EN MEMORIA (User y Bot)
                 historialMensajes.push({ role: "user", content: preguntaFinal });
                 historialMensajes.push({ role: "assistant", content: data.respuesta });
 
-                // Mantener solo los últimos 6 mensajes (3 interacciones) para no saturar tokens
                 if (historialMensajes.length > 6) {
                     historialMensajes = historialMensajes.slice(-6);
                 }
