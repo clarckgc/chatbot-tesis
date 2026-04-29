@@ -7,19 +7,18 @@ let db;
 
 try {
     db = require('../config/db');
-} catch (e) {
+} catch {
     db = null;
 }
 
 const conocimiento = require('../contexto_universidad');
 
-// 🔥 Detectar entorno
-const ES_PRODUCCION = process.env.RENDER === 'true' || process.env.NODE_ENV === 'production';
+const ES_PRODUCCION =
+    process.env.RENDER === 'true' ||
+    process.env.NODE_ENV === 'production';
+
 const MODO_DEMO = ES_PRODUCCION || !db;
 
-/**
- * 🔥 ESTADO DEL CHAT
- */
 let estadoChat = {
     tieneCodigo: false,
     codigoAlumno: '',
@@ -28,17 +27,14 @@ let estadoChat = {
     ultimoMensaje: Date.now()
 };
 
-// 🔥 1 minuto
-const TIEMPO_INACTIVIDAD = 60 * 1000;
+const TIEMPO_INACTIVIDAD = 60000;
 
 function resetChat() {
-    estadoChat = {
-        tieneCodigo: false,
-        codigoAlumno: '',
-        nombreAlumno: '',
-        esperandoDetalleCaso: false,
-        ultimoMensaje: Date.now()
-    };
+    estadoChat.tieneCodigo = false;
+    estadoChat.codigoAlumno = '';
+    estadoChat.nombreAlumno = '';
+    estadoChat.esperandoDetalleCaso = false;
+    estadoChat.ultimoMensaje = Date.now();
 }
 
 const opcionesMenu = [
@@ -52,48 +48,61 @@ const opcionesMenu = [
 
 const MSJ_RETORNO = " o escribe **'menú'** para volver.";
 
-// =============================
-// 🔥 MULTER CONFIG (MEMORIA)
-// =============================
-const storage = multer.memoryStorage();
 const upload = multer({
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// =============================
-// 🔥 ENDPOINT IMAGENES
-// =============================
-router.post('/upload', upload.single('image'), async (req, res) => {
+router.post('/upload', upload.single('image'), (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ ok: false, mensaje: "No se recibió ninguna imagen" });
+            return res.status(400).json({
+                ok: false,
+                mensaje: "No se recibió ninguna imagen"
+            });
         }
-        const base64 = req.file.buffer.toString('base64');
-        const mimeType = req.file.mimetype;
-        const url = `data:${mimeType};base64,${base64}`;
-        return res.json({ ok: true, url });
-    } catch (error) {
-        console.error("Error upload:", error);
-        return res.status(500).json({ ok: false, mensaje: "Error al subir imagen" });
+
+        const url =
+            `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+
+        res.json({ ok: true, url });
+
+    } catch {
+        res.status(500).json({
+            ok: false,
+            mensaje: "Error al subir imagen"
+        });
     }
 });
 
-// =============================
-// 🔥 FUNCIONES AUXILIARES
-// =============================
+/* ===================================
+   VALIDAR ALUMNO
+=================================== */
 const validarAlumno = async (codigo) => {
     if (!codigo) return null;
+
     if (MODO_DEMO) {
-        if (codigo === "N00123456") return { nombre: "Alumno Demo UPN" };
+        return codigo === "N00123456"
+            ? { nombre: "Alumno Demo UPN" }
+            : null;
+    }
+
+    try {
+        const [rows] = await db.execute(
+            'SELECT nombre FROM alumnos WHERE codigo_alumno = ? LIMIT 1',
+            [codigo]
+        );
+
+        return rows[0] || null;
+
+    } catch {
         return null;
     }
-    try {
-        const [rows] = await db.execute('SELECT nombre FROM alumnos WHERE codigo_alumno = ? LIMIT 1', [codigo]);
-        return rows.length > 0 ? rows[0] : null;
-    } catch { return null; }
 };
 
+/* ===================================
+   TRÁMITES
+=================================== */
 const obtenerTramites = async (codigo) => {
     if (MODO_DEMO) {
         return [
@@ -101,40 +110,84 @@ const obtenerTramites = async (codigo) => {
             { tipo_tramite: "Constancia de estudios", estado: "Aprobado" }
         ];
     }
-    const [rows] = await db.execute('SELECT * FROM solicitudes_tramites WHERE codigo_alumno = ?', [codigo]);
+
+    const [rows] = await db.execute(
+        'SELECT * FROM solicitudes_tramites WHERE codigo_alumno = ?',
+        [codigo]
+    );
+
     return rows;
 };
 
+/* ===================================
+   CASOS
+=================================== */
 const registrarCaso = async (codigo, detalle) => {
     const nro = `CAS-${Math.floor(100000 + Math.random() * 900000)}`;
+
     if (!MODO_DEMO) {
         await db.execute(
             'INSERT INTO casos_reportados (nro_caso, codigo_alumno, detalle_incidente, estado_caso) VALUES (?, ?, ?, ?)',
             [nro, codigo, detalle, 'Abierto']
         );
     }
+
     return nro;
 };
 
-// =============================
-// 🔥 RUTA PRINCIPAL
-// =============================
-router.post('/', upload.single('file'), async (req, res) => {
-    const { pregunta, opcionId } = req.body;
+/* ===================================
+   RESPUESTAS RÁPIDAS (SIN IA)
+=================================== */
+function respuestaRapida(texto) {
+    if (texto.includes("pago") || texto.includes("pensiones")) {
+        return `💰 Puedes revisar tus pagos y cronograma en:<br><br>👉 <a href="https://mimundo.upn.edu.pe" target="_blank">MiMundoUPN</a>`;
+    }
 
+    if (texto.includes("constancia") || texto.includes("certificado")) {
+        return "📄 Las constancias y certificados se solicitan desde tu portal estudiantil.";
+    }
+
+    if (texto.includes("retiro")) {
+        return "🔄 El retiro de ciclo se gestiona desde el portal del estudiante.";
+    }
+
+    if (texto.includes("blackboard")) {
+        return "💻 Si tienes inconvenientes con Blackboard, contacta soporte.it@upn.edu.pe";
+    }
+
+    if (texto.includes("horario") || texto.includes("clases")) {
+        return "📚 Tu horario académico se encuentra disponible en MiMundoUPN.";
+    }
+
+    if (texto.includes("matricula") || texto.includes("matrícula")) {
+        return "📝 El proceso de matrícula lo puedes revisar desde MiMundoUPN.";
+    }
+
+    return null;
+}
+
+/* ===================================
+   RUTA PRINCIPAL
+=================================== */
+router.post('/', upload.single('file'), async (req, res) => {
     try {
         const ahora = Date.now();
+
         if (ahora - estadoChat.ultimoMensaje > TIEMPO_INACTIVIDAD) {
             resetChat();
         }
+
         estadoChat.ultimoMensaje = ahora;
 
-        // =============================
-        // 🔥 VALIDACIÓN DE AUTENTICACIÓN (BLOQUEO DE TEXTO E IMAGEN)
-        // =============================
+        const pregunta = req.body.pregunta || '';
+        const opcionId = req.body.opcionId || '';
+        const texto = pregunta.trim().toLowerCase();
+
+        /* ===============================
+           LOGIN
+        =============================== */
         if (!estadoChat.tieneCodigo) {
-            // Intentamos validar lo que haya en 'pregunta'
-            const entrada = pregunta?.trim().toUpperCase() || "";
+            const entrada = pregunta.trim().toUpperCase();
             const alumno = await validarAlumno(entrada);
 
             if (alumno) {
@@ -152,76 +205,130 @@ router.post('/', upload.single('file'), async (req, res) => {
                 });
             }
 
-            // SI NO ES UN CÓDIGO VÁLIDO:
-            // Bloqueamos cualquier intento de subir imagen o hacer preguntas
-            return res.json({ 
-                respuesta: "⚠️ Acceso restringido. Por favor, ingresa tu código de alumno para comenzar.\n\n**Modo prueba:** usa el código **N00123456**.",
-                opciones: null 
+            return res.json({
+                respuesta:
+                    "⚠️ Acceso restringido. Por favor, ingresa tu código de alumno para comenzar.\n\n**Modo prueba:** usa el código **N00123456**.",
+                opciones: null
             });
         }
 
-        let respuestaFinal = "";
+        let respuestaFinal = '';
 
-        // =============================
-        // 🔥 MENÚ
-        // =============================
+        /* ===============================
+           BOTONES MENÚ
+        =============================== */
         if (opcionId) {
             switch (opcionId) {
                 case '1':
                     const tramites = await obtenerTramites(estadoChat.codigoAlumno);
-                    respuestaFinal = tramites.map(t => `📌 **${t.tipo_tramite}**: ${t.estado}`).join('<br>');
+                    respuestaFinal = tramites
+                        .map(t => `📌 **${t.tipo_tramite}**: ${t.estado}`)
+                        .join('<br>');
                     break;
-                case '2': respuestaFinal = "Puedes consultar trámites como retiro de ciclo, constancias o certificados."; break;
-                case '3': respuestaFinal = `Revisa tus pagos aquí:<br><br>👉 <a href="https://mimundo.upn.edu.pe" target="_blank">Ir a MiMundoUPN</a>`; break;
-                case '4': respuestaFinal = "Soporte: soporte.it@upn.edu.pe"; break;
-                case '5': respuestaFinal = "Para reingresar, solicita 'Retorno a estudios'."; break;
+
+                case '2':
+                    respuestaFinal = "Puedes consultar trámites como retiro de ciclo, constancias o certificados.";
+                    break;
+
+                case '3':
+                    respuestaFinal =
+                        `Revisa tus pagos aquí:<br><br>` +
+                        `👉 <a href="https://mimundo.upn.edu.pe" target="_blank">Ir a MiMundoUPN</a>`;
+                    break;
+
+                case '4':
+                    respuestaFinal = "Soporte: soporte.it@upn.edu.pe";
+                    break;
+
+                case '5':
+                    respuestaFinal = "Para reingresar, solicita 'Retorno a estudios'.";
+                    break;
+
                 case '6':
                     estadoChat.esperandoDetalleCaso = true;
                     respuestaFinal = "Describe tu problema para registrar un caso.";
                     break;
             }
-        }
-        // =============================
-        // 🔥 REGISTRO DE CASO
-        // =============================
-        else if (estadoChat.esperandoDetalleCaso && pregunta) {
-            const nro = await registrarCaso(estadoChat.codigoAlumno, pregunta);
-            respuestaFinal = `Caso registrado: **${nro}**`;
-            estadoChat.esperandoDetalleCaso = false;
-        }
-        // =============================
-        // 🔥 LÓGICA IA (SOLO SI YA ESTÁ AUTENTICADO)
-        // =============================
-        else if (pregunta || req.file) {
-            const texto = pregunta ? pregunta.toLowerCase().trim() : "";
 
-            if (["gracias", "ok", "listo", "perfecto", "dale"].includes(texto)) {
+            return res.json({
+                respuesta: respuestaFinal + MSJ_RETORNO,
+                opciones: null
+            });
+        }
+
+        /* ===============================
+           REGISTRAR CASO
+        =============================== */
+        if (estadoChat.esperandoDetalleCaso && pregunta) {
+            const nro = await registrarCaso(
+                estadoChat.codigoAlumno,
+                pregunta
+            );
+
+            estadoChat.esperandoDetalleCaso = false;
+
+            return res.json({
+                respuesta: `Caso registrado: **${nro}**${MSJ_RETORNO}`,
+                opciones: null
+            });
+        }
+
+        /* ===============================
+           RESPUESTAS CORTAS
+        =============================== */
+        if (["gracias", "ok", "listo", "perfecto", "dale"].includes(texto)) {
+            return res.json({
+                respuesta: "😊 ¡Con gusto! ¿Necesitas algo más?",
+                opciones: null
+            });
+        }
+
+        /* ===============================
+           MENÚ
+        =============================== */
+        if (texto.includes("menu") || texto.includes("menú")) {
+            return res.json({
+                respuesta: "Selecciona una opción:",
+                opciones: opcionesMenu
+            });
+        }
+
+        /* ===============================
+           RESPUESTA RÁPIDA SIN IA
+        =============================== */
+        if (!req.file) {
+            const rapida = respuestaRapida(texto);
+
+            if (rapida) {
                 return res.json({
-                    respuesta: "😊 ¡Con gusto! ¿Necesitas algo más?",
+                    respuesta: rapida + MSJ_RETORNO,
                     opciones: null
                 });
             }
-
-            if (texto.includes("menu") || texto.includes("menú")) {
-                return res.json({
-                    respuesta: "Selecciona una opción:",
-                    opciones: opcionesMenu
-                });
-            }
-
-            // Preparar objeto de imagen para la IA
-            let imagenData = null;
-            if (req.file) {
-                imagenData = {
-                    inlineData: {
-                        data: req.file.buffer.toString('base64'),
-                        mimeType: req.file.mimetype
-                    }
-                };
-            }
-
-            respuestaFinal = await preguntarIA(pregunta || "Analiza esta imagen", conocimiento["1"], imagenData);
         }
+
+        /* ===============================
+           IMAGEN
+        =============================== */
+        let imagenData = null;
+
+        if (req.file) {
+            imagenData = {
+                inlineData: {
+                    data: req.file.buffer.toString('base64'),
+                    mimeType: req.file.mimetype
+                }
+            };
+        }
+
+        /* ===============================
+           IA SOLO CUANDO REALMENTE SE NECESITA
+        =============================== */
+        respuestaFinal = await preguntarIA(
+            pregunta || "Analiza esta imagen",
+            conocimiento["1"],
+            imagenData
+        );
 
         res.json({
             respuesta: respuestaFinal + MSJ_RETORNO,
@@ -229,10 +336,12 @@ router.post('/', upload.single('file'), async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error en ruta principal:", error);
-        res.json({ respuesta: "Error en el servidor." });
+        console.error(error);
+
+        res.json({
+            respuesta: "Error en el servidor."
+        });
     }
 });
-
 
 module.exports = router;

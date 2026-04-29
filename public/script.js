@@ -10,7 +10,7 @@ let avisoTimer;
 let cierreTimer;
 let conversacionIniciada = false;
 let enviando = false;
-let archivoPendiente = null; // 🔥 Almacena la imagen antes de enviarla
+let archivoPendiente = null;
 
 /* =========================
     🔔 NOTIFICACIONES
@@ -60,7 +60,7 @@ Ingresa tu código de alumno.<br><br>
 function scrollToBottom() {
     chatBox.scrollTo({
         top: chatBox.scrollHeight,
-        behavior: "smooth"
+        behavior: "auto"
     });
 }
 
@@ -98,7 +98,7 @@ function iniciarTemporizadores() {
 
     avisoTimer = setTimeout(() => {
         appendMessage('bot', "¿Sigues ahí? 👀 Estoy atento para continuar ayudándote.");
-    }, 30000); 
+    }, 30000);
 
     cierreTimer = setTimeout(() => {
         const URL_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSdwz-LSX_jKUlEg9MVv9rvKYVZhTsKQop709vmc1PjH5hVytQ/viewform?usp=dialog";
@@ -106,7 +106,7 @@ function iniciarTemporizadores() {
         appendMessage('bot', `
             No hemos tenido respuesta para continuar con la comunicación.<br><br>
             Cuando quieras retomar la conversación, aquí estaremos para ayudarte. 😊<br><br>
-            
+
             📝 Antes de irte, tu opinión es muy importante:<br><br>
             👉 <a href="${URL_FORM}" target="_blank">Evaluar el Chatbot</a>
         `);
@@ -129,7 +129,7 @@ function formatearTextoBot(texto) {
 }
 
 /* =========================
-    💬 2. MENSAJES CON HORA
+    💬 MENSAJE NORMAL
 ========================= */
 function appendMessage(sender, text) {
     const msgDiv = document.createElement('div');
@@ -154,10 +154,53 @@ function appendMessage(sender, text) {
 
     chatBox.appendChild(msgDiv);
     scrollToBottom();
-    
-    if (!text.includes("¿Sigues ahí?") && !text.includes("No hemos tenido respuesta")) {
+
+    if (!text.includes("¿Sigues ahí?") &&
+        !text.includes("No hemos tenido respuesta")) {
         iniciarTemporizadores();
     }
+}
+
+/* =========================
+    🔥 NUEVO EFECTO ESCRITURA BOT
+========================= */
+function appendMessageTypingEffect(textoCompleto, velocidad = 14) {
+    return new Promise((resolve) => {
+
+        const msgDiv = document.createElement('div');
+        msgDiv.classList.add('message', 'bot');
+
+        const contenido = document.createElement('div');
+        const horaDiv = document.createElement('div');
+        horaDiv.className = "hora";
+        horaDiv.innerText = obtenerHora();
+
+        msgDiv.appendChild(contenido);
+        msgDiv.appendChild(horaDiv);
+
+        chatBox.appendChild(msgDiv);
+        scrollToBottom();
+
+        mostrarNotificacion(textoCompleto);
+
+        const texto = formatearTextoBot(textoCompleto);
+
+        let i = 0;
+
+        function escribir() {
+            if (i < texto.length) {
+                contenido.innerHTML = texto.substring(0, i + 1);
+                i++;
+                scrollToBottom();
+                setTimeout(escribir, velocidad);
+            } else {
+                iniciarTemporizadores();
+                resolve();
+            }
+        }
+
+        escribir();
+    });
 }
 
 /* 🆕 NUEVO: mostrar imagen en burbuja */
@@ -181,7 +224,7 @@ function appendImage(sender, imageUrl) {
 ========================= */
 function renderOptions(options) {
     if (!options || options.length === 0) return;
-    
+
     const menusViejos = document.querySelectorAll('.menu-opciones-container');
     menusViejos.forEach(m => m.remove());
 
@@ -197,7 +240,7 @@ function renderOptions(options) {
             conversacionIniciada = true;
             appendMessage('user', opt.texto);
             sendMessage(null, opt.id);
-            optionsContainer.remove(); 
+            optionsContainer.remove();
         };
 
         optionsContainer.appendChild(btn);
@@ -208,7 +251,7 @@ function renderOptions(options) {
 }
 
 /* =========================
-    🔥 4. ENVÍO UNIFICADO (TEXTO + IMAGEN)
+    🔥 4. ENVÍO UNIFICADO
 ========================= */
 async function sendMessage(text, opcionId = null) {
 
@@ -218,14 +261,22 @@ async function sendMessage(text, opcionId = null) {
     enviando = true;
 
     const formData = new FormData();
-    
+
     if (opcionId) {
         formData.append('opcionId', opcionId);
     } else {
-        let pregunta = text || "Analiza la imagen adjunta"; 
-        if (text && (text.toLowerCase().includes("menú") || text.toLowerCase().includes("regresar"))) {
-            pregunta = "menú"; 
+
+        let pregunta = text || "Analiza la imagen adjunta";
+
+        if (text) {
+            const textoMin = text.toLowerCase();
+
+            if (textoMin.includes("menú") ||
+                textoMin.includes("regresar")) {
+                pregunta = "menú";
+            }
         }
+
         formData.append('pregunta', pregunta);
     }
 
@@ -238,38 +289,38 @@ async function sendMessage(text, opcionId = null) {
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
-            body: formData 
+            body: formData
         });
-        
+
         const data = await response.json();
+
         quitarTyping();
 
-        // Limpiamos el archivo pendiente solo después de que se envió con éxito
         archivoPendiente = null;
 
-        setTimeout(() => {
-        if (data.respuesta) {
+        requestAnimationFrame(async () => {
+
+            if (data.respuesta) {
 
                 const respuestaLower = data.respuesta.toLowerCase();
 
-                // 🔥 MENSAJES DONDE AÚN NO ESTÁ AUTENTICADO
-                if (
+                const requiereTextoDirecto =
                     respuestaLower.includes("ingresa tu código") ||
                     respuestaLower.includes("código de alumno") ||
                     respuestaLower.includes("código correcto de prueba") ||
                     respuestaLower.includes("código no válido") ||
-                    respuestaLower.includes("para iniciar la demostración")
-                ) {
+                    respuestaLower.includes("para iniciar la demostración");
 
+                if (requiereTextoDirecto) {
                     appendMessage('bot', data.respuesta);
                     conversacionIniciada = false;
 
                 } else {
 
-                    // 🔥 RESPUESTA NORMAL (YA AUTENTICADO)
-                    appendMessage('bot', data.respuesta);
                     conversacionIniciada = true;
-                    iniciarTemporizadores();
+
+                    /* 🔥 RESPUESTA EFECTO CHATGPT */
+                    await appendMessageTypingEffect(data.respuesta, 12);
                 }
             }
 
@@ -277,7 +328,7 @@ async function sendMessage(text, opcionId = null) {
                 renderOptions(data.opciones);
             }
 
-        }, 400);
+        });
 
     } catch (error) {
         quitarTyping();
@@ -295,7 +346,9 @@ sendBtn.onclick = () => {
     const text = userInput.value.trim();
 
     if (text || archivoPendiente) {
+
         if (text) appendMessage('user', text);
+
         sendMessage(text);
         userInput.value = '';
     }
@@ -309,34 +362,38 @@ if (imageBtn) {
     imageBtn.onclick = () => imageInput.click();
 }
 
-/* 🆕 Captura de imagen: BLOQUEA SI NO ESTÁ AUTENTICADO */
+/* 🆕 Captura de imagen */
 if (imageInput) {
     imageInput.addEventListener('change', () => {
+
         const file = imageInput.files[0];
         if (!file) return;
 
-        // 🔥 CRÍTICO: Si no hay conversación iniciada (autenticado), bloqueamos.
         if (!conversacionIniciada) {
             appendMessage('bot', MENSAJE_BIENVENIDA);
-            imageInput.value = ""; 
+            imageInput.value = "";
             return;
         }
 
-        archivoPendiente = file; 
+        archivoPendiente = file;
 
         const reader = new FileReader();
+
         reader.onload = (e) => {
-            // 1. Mostrar la imagen en el chat
+
             appendImage('user', e.target.result);
 
-            // 2. Solo confirmación, espera a que el usuario escriba o de click en enviar
-            setTimeout(() => {
-                appendMessage('bot', "He recibido tu imagen. 😊 Escribe tu consulta para analizarla juntos o presiona <b>Enviar</b>.");
-            }, 500);
+            requestAnimationFrame(() => {
+                appendMessage(
+                    'bot',
+                    "He recibido tu imagen. 😊 Escribe tu consulta para analizarla juntos o presiona <b>Enviar</b>."
+                );
+            });
         };
+
         reader.readAsDataURL(file);
 
-        imageInput.value = ""; 
+        imageInput.value = "";
     });
 }
 
@@ -344,9 +401,11 @@ if (imageInput) {
     🔥 MENSAJE INICIAL
 ========================= */
 window.addEventListener("load", () => {
+
     solicitarPermisoNotificaciones();
 
-    setTimeout(() => {
+    requestAnimationFrame(() => {
         appendMessage('bot', MENSAJE_BIENVENIDA);
-    }, 500);
+    });
+
 });

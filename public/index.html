@@ -35,57 +35,105 @@
     <div class="welcome-screen">
         <div class="welcome-content">
             <h1>Bienvenido al Asistente Universitario IA</h1>
-            <p>Tu guía inteligente para consultas administrativas, trámites académicos y soporte universitario en tiempo real.</p>
+
+            <p>
+                Tu guía inteligente para consultas administrativas,
+                trámites académicos y soporte universitario en tiempo real.
+            </p>
+
             <ul class="welcome-features">
                 <li>✅ Respuestas inmediatas 24/7</li>
                 <li>✅ Guía de trámites y procesos</li>
                 <li>✅ Soporte con documentos e imágenes</li>
-                <li>✅ Acceso también desde Celular</li>
+                <li>✅ Compatible con celular y computadora</li>
             </ul>
-        </div>
-        
-        <div class="chat-arrow-pointer">
-            <span>¡Haz clic aquí para iniciar!</span>
-            <div class="arrow">↓</div>
         </div>
     </div>
 
-    <div id="chat-toggle">💬</div>
+    <!-- BOTÓN FLOTANTE -->
+    <div id="chat-toggle" title="Asistente IA">🤖</div>
 
+    <!-- CHAT -->
     <div class="chat-container" id="chat">
 
         <header>
-            <div id="close-chat" onclick="document.getElementById('chat').classList.remove('active')">✕</div>
+            <div
+                id="close-chat"
+                onclick="document.getElementById('chat').classList.remove('active')"
+            >
+                ✕
+            </div>
 
             <h2>ASISTENTE UNIVERSITARIO IA</h2>
-            
-            <div style="margin-top: 10px; display: flex; justify-content: center; gap: 10px;">
-                <span id="status" style="font-size: 0.75rem; background: rgba(255,255,255,0.1); padding: 3px 10px; border-radius: 20px;">
-                    <span style="color: #00ff00;">●</span> Conectado
+
+            <div style="
+                margin-top:10px;
+                display:flex;
+                justify-content:center;
+                gap:10px;
+            ">
+                <span
+                    id="status"
+                    style="
+                        font-size:0.75rem;
+                        background:rgba(255,255,255,0.1);
+                        padding:3px 10px;
+                        border-radius:20px;
+                    "
+                >
+                    <span style="color:#00ff00;">●</span>
+                    Conectado
                 </span>
 
-                <a href="metrics.html?from=admin" id="admin-btn" class="metrics-btn" style="display: none;">Ver Métricas 📊</a>
+                <a
+                    href="metrics.html?from=admin"
+                    id="admin-btn"
+                    class="metrics-btn"
+                    style="display:none;"
+                >
+                    Ver Métricas 📊
+                </a>
             </div>
         </header>
 
+        <!-- MENSAJES -->
         <div id="chat-box" class="chat-box">
+
             <div id="admin-message-overlay" class="admin-overlay">
                 <h3>MODO ADMINISTRADOR</h3>
-                <p style="color: #ccc; font-size: 0.9rem;">
+
+                <p style="color:#ccc; font-size:0.9rem;">
                     El chat está deshabilitado en este perfil.
                 </p>
             </div>
+
         </div>
 
+        <!-- INPUT -->
         <div id="input-area" class="input-area">
-            <input type="text" id="user-input" placeholder="Escribe tu consulta aquí..." autocomplete="off">
-            <input type="file" id="image-input" accept="image/*" style="display:none;">
+
+            <input
+                type="text"
+                id="user-input"
+                placeholder="Escribe tu consulta aquí..."
+                autocomplete="off"
+            >
+
+            <input
+                type="file"
+                id="image-input"
+                accept="image/*"
+                style="display:none;"
+            >
+
             <button id="image-btn">📎</button>
             <button id="send-btn">Enviar</button>
+
         </div>
 
     </div>
 
+    <!-- SCRIPT ADMIN -->
     <script>
         const params = new URLSearchParams(window.location.search);
         const isAdmin = params.get('role') === 'admin';
@@ -99,6 +147,7 @@
         }
     </script>
 
+    <!-- SCRIPT CHAT -->
     <script>
         const chatToggle = document.getElementById("chat-toggle");
         const chatContainer = document.getElementById("chat");
@@ -108,6 +157,8 @@
         });
     </script>
 
+    <!-- JS PRINCIPAL -->
     <script src="script.js"></script>
+
 </body>
 </html>
