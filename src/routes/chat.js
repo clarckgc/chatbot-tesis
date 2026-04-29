@@ -19,22 +19,31 @@ const ES_PRODUCCION =
 
 const MODO_DEMO = ES_PRODUCCION || !db;
 
-let estadoChat = {
-    tieneCodigo: false,
-    codigoAlumno: '',
-    nombreAlumno: '',
-    esperandoDetalleCaso: false,
-    ultimoMensaje: Date.now()
-};
+// 🆕 Esta función asegura que cada usuario tenga su propio objeto de estado
+function obtenerEstadoUsuario(req) {
+    if (!req.session.estadoChat) {
+        req.session.estadoChat = {
+            tieneCodigo: false,
+            codigoAlumno: '',
+            nombreAlumno: '',
+            esperandoDetalleCaso: false,
+            ultimoMensaje: Date.now()
+        };
+    }
+    return req.session.estadoChat;
+}
 
 const TIEMPO_INACTIVIDAD = 60000;
 
-function resetChat() {
-    estadoChat.tieneCodigo = false;
-    estadoChat.codigoAlumno = '';
-    estadoChat.nombreAlumno = '';
-    estadoChat.esperandoDetalleCaso = false;
-    estadoChat.ultimoMensaje = Date.now();
+// 🆕 Ahora el reset limpia la sesión del usuario específico
+function resetChat(req) {
+    req.session.estadoChat = {
+        tieneCodigo: false,
+        codigoAlumno: '',
+        nombreAlumno: '',
+        esperandoDetalleCaso: false,
+        ultimoMensaje: Date.now()
+    };
 }
 
 const opcionesMenu = [
@@ -171,10 +180,12 @@ function respuestaRapida(texto) {
 =================================== */
 router.post('/', upload.single('file'), async (req, res) => {
     try {
+        // 🆕 Obtenemos el estado único del usuario actual
+        const estadoChat = obtenerEstadoUsuario(req);
         const ahora = Date.now();
 
         if (ahora - estadoChat.ultimoMensaje > TIEMPO_INACTIVIDAD) {
-            resetChat();
+            resetChat(req);
         }
 
         estadoChat.ultimoMensaje = ahora;
@@ -184,7 +195,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         const texto = pregunta.trim().toLowerCase();
 
         /* ===============================
-           LOGIN
+            LOGIN
         =============================== */
         if (!estadoChat.tieneCodigo) {
             const entrada = pregunta.trim().toUpperCase();
@@ -215,7 +226,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         let respuestaFinal = '';
 
         /* ===============================
-           BOTONES MENÚ
+            BOTONES MENÚ
         =============================== */
         if (opcionId) {
             switch (opcionId) {
@@ -257,7 +268,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         /* ===============================
-           REGISTRAR CASO
+            REGISTRAR CASO
         =============================== */
         if (estadoChat.esperandoDetalleCaso && pregunta) {
             const nro = await registrarCaso(
@@ -274,7 +285,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         /* ===============================
-           RESPUESTAS CORTAS
+            RESPUESTAS CORTAS
         =============================== */
         if (["gracias", "ok", "listo", "perfecto", "dale"].includes(texto)) {
             return res.json({
@@ -284,7 +295,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         /* ===============================
-           MENÚ
+            MENÚ
         =============================== */
         if (texto.includes("menu") || texto.includes("menú")) {
             return res.json({
@@ -294,7 +305,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         /* ===============================
-           RESPUESTA RÁPIDA SIN IA
+            RESPUESTA RÁPIDA SIN IA
         =============================== */
         if (!req.file) {
             const rapida = respuestaRapida(texto);
@@ -308,7 +319,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         /* ===============================
-           IMAGEN
+            IMAGEN
         =============================== */
         let imagenData = null;
 
@@ -316,13 +327,14 @@ router.post('/', upload.single('file'), async (req, res) => {
             imagenData = {
                 inlineData: {
                     data: req.file.buffer.toString('base64'),
+                    // Se usa req.file.mimetype para mayor precisión
                     mimeType: req.file.mimetype
                 }
             };
         }
 
         /* ===============================
-           IA SOLO CUANDO REALMENTE SE NECESITA
+            IA SOLO CUANDO REALMENTE SE NECESITA
         =============================== */
         respuestaFinal = await preguntarIA(
             pregunta || "Analiza esta imagen",

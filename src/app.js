@@ -1,16 +1,22 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path'); 
+const session = require('express-session'); // 🆕 Importamos sesiones
 const app = express();
 
 const chatRoutes = require('./routes/chat');
 
 app.use(express.json());
 
-// Servir archivos de la carpeta public
-app.use(express.static(path.join(__dirname, '../public')));
+// 🆕 Configuración de sesión profesional
+app.use(session({
+    secret: 'mi-clave-secreta-tesis', // Cambia esto por cualquier frase
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // Ponlo en true si usas HTTPS más adelante
+}));
 
-// Solo usamos esta ruta, ya que contiene tanto el chat como las métricas
+app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/chat', chatRoutes);
 
 const PORT = process.env.PORT || 3000;
