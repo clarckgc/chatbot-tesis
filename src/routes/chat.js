@@ -176,11 +176,10 @@ function respuestaRapida(texto) {
 }
 
 /* ===================================
-   RUTA PRINCIPAL
+   RUTA PRINCIPAL (CORREGIDA PARA MEMORIA)
 =================================== */
 router.post('/', upload.single('file'), async (req, res) => {
     try {
-        // 🆕 Obtenemos el estado único del usuario actual
         const estadoChat = obtenerEstadoUsuario(req);
         const ahora = Date.now();
 
@@ -192,10 +191,22 @@ router.post('/', upload.single('file'), async (req, res) => {
 
         const pregunta = req.body.pregunta || '';
         const opcionId = req.body.opcionId || '';
+        const historialRaw = req.body.historial || ''; // 🆕 Recibimos el historial del frontend
         const texto = pregunta.trim().toLowerCase();
 
+        // 🧠 Parsear el historial para que sea un objeto válido para la función preguntarIA
+        let historialArreglo = [];
+        if (historialRaw) {
+            try {
+                historialArreglo = JSON.parse(historialRaw);
+            } catch (e) {
+                console.error("Error parseando historial:", e);
+                historialArreglo = [];
+            }
+        }
+
         /* ===============================
-            LOGIN
+           LOGIN
         =============================== */
         if (!estadoChat.tieneCodigo) {
             const entrada = pregunta.trim().toUpperCase();
@@ -226,7 +237,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         let respuestaFinal = '';
 
         /* ===============================
-            BOTONES MENÚ
+           BOTONES MENÚ
         =============================== */
         if (opcionId) {
             switch (opcionId) {
@@ -268,7 +279,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         /* ===============================
-            REGISTRAR CASO
+           REGISTRAR CASO
         =============================== */
         if (estadoChat.esperandoDetalleCaso && pregunta) {
             const nro = await registrarCaso(
@@ -285,7 +296,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         /* ===============================
-            RESPUESTAS CORTAS
+           RESPUESTAS CORTAS
         =============================== */
         if (["gracias", "ok", "listo", "perfecto", "dale"].includes(texto)) {
             return res.json({
@@ -295,7 +306,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         /* ===============================
-            MENÚ
+           MENÚ
         =============================== */
         if (texto.includes("menu") || texto.includes("menú")) {
             return res.json({
@@ -305,7 +316,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         /* ===============================
-            RESPUESTA RÁPIDA SIN IA
+           RESPUESTA RÁPIDA SIN IA
         =============================== */
         if (!req.file) {
             const rapida = respuestaRapida(texto);
@@ -319,7 +330,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         /* ===============================
-            IMAGEN
+           PREPARAR DATOS DE IMAGEN
         =============================== */
         let imagenData = null;
 
@@ -327,19 +338,20 @@ router.post('/', upload.single('file'), async (req, res) => {
             imagenData = {
                 inlineData: {
                     data: req.file.buffer.toString('base64'),
-                    // Se usa req.file.mimetype para mayor precisión
                     mimeType: req.file.mimetype
                 }
             };
         }
 
         /* ===============================
-            IA SOLO CUANDO REALMENTE SE NECESITA
+           IA CON MEMORIA (HISTORIAL)
         =============================== */
+        // Se envía el historial como 4to parámetro para mantener el hilo de la conversación
         respuestaFinal = await preguntarIA(
             pregunta || "Analiza esta imagen",
             conocimiento["1"],
-            imagenData
+            imagenData,
+            historialArreglo 
         );
 
         res.json({
@@ -348,10 +360,10 @@ router.post('/', upload.single('file'), async (req, res) => {
         });
 
     } catch (error) {
-        console.error(error);
+        console.error("Error en la ruta principal de chat:", error);
 
         res.json({
-            respuesta: "Error en el servidor."
+            respuesta: "Error en el servidor al procesar la consulta."
         });
     }
 });

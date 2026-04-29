@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-async function preguntarIA(pregunta, contexto, imagenData = null) {
+async function preguntarIA(pregunta, contexto, imagenData = null, historial = []) {
     try {
         // Creamos una base de conocimientos limpia para la IA
         const baseConocimiento = `
@@ -43,14 +43,18 @@ async function preguntarIA(pregunta, contexto, imagenData = null) {
             });
         }
 
+        // Construimos el arreglo de mensajes incluyendo el historial para mantener el contexto
+        const mensajesCompletos = [
+            { role: "system", content: systemPrompt },
+            ...historial, // Insertamos los mensajes previos aquí
+            { role: "user", content: userContent }
+        ];
+
         const response = await axios.post(
             'https://api.openai.com/v1/chat/completions',
             {
                 model: "gpt-4o-mini",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userContent }
-                ],
+                messages: mensajesCompletos,
                 temperature: 0.4,
                 max_tokens: 300
             },

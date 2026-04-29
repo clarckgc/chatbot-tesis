@@ -12,6 +12,9 @@ let conversacionIniciada = false;
 let enviando = false;
 let archivoPendiente = null;
 
+/* 🧠 MEMORIA DEL CHAT: Guardamos los últimos mensajes */
+let historialMensajes = [];
+
 /* =========================
     🔔 NOTIFICACIONES
 ========================= */
@@ -113,6 +116,7 @@ function iniciarTemporizadores() {
 
         fetch('/api/chat/reset', { method: 'POST' });
         conversacionIniciada = false;
+        historialMensajes = []; // Limpiamos memoria al cerrar
 
     }, 60000);
 }
@@ -239,7 +243,7 @@ function renderOptions(options) {
         btn.onclick = () => {
             conversacionIniciada = true;
             appendMessage('user', opt.texto);
-            sendMessage(null, opt.id);
+            sendMessage(null, opt.id, opt.texto); // Pasamos el texto para el historial
             optionsContainer.remove();
         };
 
@@ -251,9 +255,9 @@ function renderOptions(options) {
 }
 
 /* =========================
-    🔥 4. ENVÍO UNIFICADO (OPTIMIZADO)
+    🔥 4. ENVÍO UNIFICADO (OPTIMIZADO CON MEMORIA)
 ========================= */
-async function sendMessage(text, opcionId = null) {
+async function sendMessage(text, opcionId = null, textoOpcion = null) {
 
     if (enviando) return;
     if (!text && !opcionId && !archivoPendiente) return;
@@ -261,33 +265,28 @@ async function sendMessage(text, opcionId = null) {
     enviando = true;
     const formData = new FormData();
 
+    let preguntaFinal = text || textoOpcion || "Analiza la imagen adjunta";
+
     if (opcionId) {
         formData.append('opcionId', opcionId);
-    } else {
-        let pregunta = text || "Analiza la imagen adjunta";
-
-        if (text) {
-            const textoMin = text.toLowerCase();
-
-            // OPTIMIZACIÓN: Interceptamos temas comunes para guiar a la IA
-            const temasClave = [
-                'pagos', 'bachiller', 'titulo', 'maestria', 'inasistencias', 
-                'procesos', 'cursos', 'malla', 'sunedu', 'reclamo'
-            ];
-
-            const temaDetectado = temasClave.find(tema => textoMin.includes(tema));
-            
-            if (temaDetectado) {
-                // Le damos una instrucción rápida y directa al backend
-                pregunta = `Responde brevemente sobre ${temaDetectado}: ${text}`;
-            }
-
-            if (textoMin.includes("menú") || textoMin.includes("regresar")) {
-                pregunta = "menú";
-            }
+    } else if (text) {
+        const textoMin = text.toLowerCase();
+        const temasClave = ['pagos', 'bachiller', 'titulo', 'maestria', 'inasistencias', 'procesos', 'cursos', 'malla', 'sunedu', 'reclamo'];
+        const temaDetectado = temasClave.find(tema => textoMin.includes(tema));
+        
+        if (temaDetectado) {
+            preguntaFinal = `Responde brevemente sobre ${temaDetectado}: ${text}`;
         }
-        formData.append('pregunta', pregunta);
+        if (textoMin.includes("menú") || textoMin.includes("regresar")) {
+            preguntaFinal = "menú";
+            historialMensajes = []; // Resetear memoria al volver al menú
+        }
     }
+
+    formData.append('pregunta', preguntaFinal);
+    
+    // 🧠 AGREGAMOS EL HISTORIAL AL ENVÍO
+    formData.append('historial', JSON.stringify(historialMensajes));
 
     if (archivoPendiente) {
         formData.append('file', archivoPendiente);
@@ -305,30 +304,38 @@ async function sendMessage(text, opcionId = null) {
         quitarTyping();
         archivoPendiente = null;
 
-        requestAnimationFrame(async () => {
-            if (data.respuesta) {
-                const respuestaLower = data.respuesta.toLowerCase();
-                const requiereTextoDirecto =
-                    respuestaLower.includes("ingresa tu código") ||
-                    respuestaLower.includes("código de alumno") ||
-                    respuestaLower.includes("código correcto de prueba") ||
-                    respuestaLower.includes("código no válido") ||
-                    respuestaLower.includes("para iniciar la demostración");
+        if (data.respuesta) {
+            const respuestaLower = data.respuesta.toLowerCase();
+            const requiereTextoDirecto =
+                respuestaLower.includes("ingresa tu código") ||
+                respuestaLower.includes("código de alumno") ||
+                respuestaLower.includes("código correcto de prueba") ||
+                respuestaLower.includes("código no válido") ||
+                respuestaLower.includes("para iniciar la demostración");
 
-                if (requiereTextoDirecto) {
-                    appendMessage('bot', data.respuesta);
-                    conversacionIniciada = false;
-                } else {
-                    conversacionIniciada = true;
-                    /* 🔥 RESPUESTA EFECTO CHATGPT RÁPIDO */
-                    await appendMessageTypingEffect(data.respuesta, 10); // Velocidad aumentada de 12 a 10
+            if (requiereTextoDirecto) {
+                appendMessage('bot', data.respuesta);
+                conversacionIniciada = false;
+                historialMensajes = []; 
+            } else {
+                conversacionIniciada = true;
+                
+                // 🧠 GUARDAMOS EN MEMORIA (User y Bot)
+                historialMensajes.push({ role: "user", content: preguntaFinal });
+                historialMensajes.push({ role: "assistant", content: data.respuesta });
+
+                // Mantener solo los últimos 6 mensajes (3 interacciones) para no saturar tokens
+                if (historialMensajes.length > 6) {
+                    historialMensajes = historialMensajes.slice(-6);
                 }
-            }
 
-            if (data.opciones && data.opciones.length > 0) {
-                renderOptions(data.opciones);
+                await appendMessageTypingEffect(data.respuesta, 10);
             }
-        });
+        }
+
+        if (data.opciones && data.opciones.length > 0) {
+            renderOptions(data.opciones);
+        }
 
     } catch (error) {
         quitarTyping();
