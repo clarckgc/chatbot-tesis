@@ -112,28 +112,53 @@ body {
     to { opacity: 1; transform: scale(1); }
 }
 
-/* 🔥 BOTÓN FLOTANTE PRO */
+/* 🔥 BOTÓN FLOTANTE PRO (Más grande y transparente) */
 #chat-toggle {
     position: fixed;
     bottom: 25px;
     right: 25px;
-    background: transparent;
-    color: initial;
-    width: auto;
-    height: auto;
-    border-radius: 0;
+
+    /* Aumentamos el tamaño del contenedor (antes 68px) */
+    width: 90px;
+    height: 90px;
+
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 52px;
+
+    /* Aumentamos el tamaño del icono/emoji (antes 34px) */
+    font-size: 55px; 
+    
     cursor: pointer;
-    box-shadow: none;
-    transition: transform 0.3s ease;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    box-shadow: none; 
+
+    /* Añadimos una sombra solo a la figura del robot para que destaque */
+    filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
+
+    transition: all 0.28s ease;
     z-index: 1000;
+    animation: botFloat 2.8s ease-in-out infinite;
 }
 
 #chat-toggle:hover {
-    transform: scale(1.12);
+    transform: translateY(-4px) scale(1.06);
+    box-shadow:
+        0 16px 34px rgba(0,0,0,0.22),
+        0 6px 14px rgba(0,0,0,0.10);
+}
+
+#chat-toggle:active {
+    transform: scale(0.96);
+}
+
+@keyframes botFloat {
+    0%   { transform: translateY(0px); }
+    50%  { transform: translateY(-6px); }
+    100% { transform: translateY(0px); }
 }
 
 /* 🔥 CHAT FLOTANTE */
@@ -443,4 +468,69 @@ button:hover {
     color: #888;
     text-align: right;
     margin-top: 4px;
+}
+
+/* adicional*/
+
+/* Contenedor relativo para posicionar el tooltip */
+.chat-wrapper {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 1001; /* Asegura que esté sobre todo */
+}
+
+/* Reajustamos el botón (quitamos el fixed de aquí porque ya lo tiene el wrapper) */
+#chat-toggle {
+    position: relative;
+    bottom: 0;
+    right: 0;
+    /* ... (mantén tus otros estilos de tamaño y transparencia aquí) */
+}
+
+/* 🔥 TOOLTIP PROFESIONAL */
+.chat-tooltip {
+    position: absolute;
+    bottom: 110%; /* Aparece arriba del robot */
+    right: 0;
+    background: var(--color-oscuro);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 10px;
+    font-size: 13px;
+    white-space: nowrap;
+    border-left: 3px solid var(--color-primario); /* Detalle de marca */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    
+    /* Animación inicial */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Flechita del tooltip */
+.chat-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    right: 20px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: var(--color-oscuro) transparent transparent transparent;
+}
+
+/* 🔥 EFECTO AL PASAR EL MOUSE */
+.chat-wrapper:hover .chat-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Negrita personalizada para Clarck */
+.chat-tooltip b {
+    color: var(--color-primario);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
