@@ -50,13 +50,11 @@
         </div>
     </div>
 
-    <!-- BOTÓN FLOTANTE -->
     <div class="chat-wrapper">
         <div id="chat-toggle">🤖</div>
-        <span class="chat-tooltip">Hola, soy <b>Clarck</b>, tu IA favorita</span>
+        <span id="clarck-tooltip" class="chat-tooltip">👋 ¡Hola! Soy <b>CLARCK</b>, tu IA favorita</span>
     </div>
 
-    <!-- CHAT -->
     <div class="chat-container" id="chat">
 
         <header>
@@ -99,7 +97,6 @@
             </div>
         </header>
 
-        <!-- MENSAJES -->
         <div id="chat-box" class="chat-box">
 
             <div id="admin-message-overlay" class="admin-overlay">
@@ -112,7 +109,6 @@
 
         </div>
 
-        <!-- INPUT -->
         <div id="input-area" class="input-area">
 
             <input
@@ -136,7 +132,6 @@
 
     </div>
 
-    <!-- SCRIPT ADMIN -->
     <script>
         const params = new URLSearchParams(window.location.search);
         const isAdmin = params.get('role') === 'admin';
@@ -150,17 +145,65 @@
         }
     </script>
 
-    <!-- SCRIPT CHAT -->
     <script>
         const chatToggle = document.getElementById("chat-toggle");
         const chatContainer = document.getElementById("chat");
+        const tooltip = document.getElementById("clarck-tooltip");
 
+        // Mensajes de la secuencia con emoticones y resaltado amarillo (usando <b>)
+        const listaMensajes = [
+            "👋 ¡Hola! Soy <b>CLARCK</b>, tu IA favorita",
+            "🚀 Estoy listo para que <b>empecemos</b> una conversación",
+            "✨ ¿<b>Empezamos</b> ahora mismo?"
+        ];
+
+        let indiceActual = 0;
+
+        // Función para abrir/cerrar chat
         chatToggle.addEventListener("click", () => {
             chatContainer.classList.toggle("active");
+            if(tooltip) tooltip.classList.remove("tooltip-visible");
+        });
+
+        function gestionarSecuencia() {
+            // Si el chat está abierto, pausamos la secuencia automática
+            if (chatContainer.classList.contains('active')) {
+                setTimeout(gestionarSecuencia, 5000);
+                return;
+            }
+
+            if (indiceActual < listaMensajes.length) {
+                // Cambiar el texto dinámicamente
+                tooltip.innerHTML = listaMensajes[indiceActual];
+                
+                // Aplicar la clase para que el CSS lo muestre
+                tooltip.classList.add('tooltip-visible');
+
+                // Cada mensaje dura 8 segundos en pantalla
+                setTimeout(() => {
+                    tooltip.classList.remove('tooltip-visible');
+                    indiceActual++;
+                    
+                    // Pausa de 1.5s entre cada mensaje de la serie para que no sea brusco
+                    setTimeout(gestionarSecuencia, 1500);
+                }, 8000);
+
+            } else {
+                // Al terminar los 3 mensajes, reinicia el ciclo
+                indiceActual = 0;
+                // Espera 15 segundos de "silencio" antes de volver a empezar el bucle
+                setTimeout(gestionarSecuencia, 15000);
+            }
+        }
+
+        // Iniciar la secuencia 2 segundos después de que cargue la web
+        window.addEventListener('DOMContentLoaded', () => {
+            if (tooltip) {
+                setTimeout(gestionarSecuencia, 2000);
+            }
         });
     </script>
 
-    <!-- JS PRINCIPAL -->
     <script src="script.js"></script>
 
 </body>

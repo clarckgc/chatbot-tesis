@@ -66,9 +66,9 @@ body {
 /* 🔥 FLECHA INDICADORA MEJORADA Y ALINEADA */
 .chat-arrow-pointer {
     position: fixed;
-    bottom: 95px; /* justo encima del botón */
-    right: 25px; /* MISMO right que el botón */
-    width: 60px; /* mismo ancho del botón */
+    bottom: 95px;
+    right: 25px;
+    width: 60px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -78,24 +78,21 @@ body {
     font-weight: bold;
     text-align: center;
     animation: bounceVertical 2s infinite;
-    z-index: 900; /* 🔥 CAMBIO: antes 1000 */
+    z-index: 900;
 }
 
-/* Texto */
 .chat-arrow-pointer span {
     font-size: 12px;
-    width: 120px; /* evita que se corte raro */
-    transform: translateX(-30px); /* centra visualmente el texto */
+    width: 120px;
+    transform: translateX(-30px);
 }
 
-/* Flecha */
 .chat-arrow-pointer .arrow {
     font-size: 2.2rem;
     color: var(--color-primario);
     text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
 }
 
-/* 🔥 NUEVO: evita superposición cuando el chat está abierto */
 .chat-container.active ~ .chat-arrow-pointer {
     opacity: 0;
     pointer-events: none;
@@ -112,56 +109,91 @@ body {
     to { opacity: 1; transform: scale(1); }
 }
 
-/* 🔥 BOTÓN FLOTANTE PRO (Más grande y transparente) */
-#chat-toggle {
+/* --- SECCIÓN DEL CHATBOT Y TOOLTIP DINÁMICO --- */
+
+.chat-wrapper {
     position: fixed;
     bottom: 25px;
     right: 25px;
+    z-index: 1001;
+}
 
-    /* Aumentamos el tamaño del contenedor (antes 68px) */
+#chat-toggle {
+    position: relative;
     width: 90px;
     height: 90px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
-    /* Aumentamos el tamaño del icono/emoji (antes 34px) */
     font-size: 55px; 
-    
     cursor: pointer;
     background: transparent;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
     border: none;
-    box-shadow: none; 
-
-    /* Añadimos una sombra solo a la figura del robot para que destaque */
+    outline: none;
+    user-select: none; /* Evita que aparezca la raya del cursor */
+    -webkit-tap-highlight-color: transparent;
     filter: drop-shadow(0 5px 15px rgba(0,0,0,0.2));
-
     transition: all 0.28s ease;
-    z-index: 1000;
     animation: botFloat 2.8s ease-in-out infinite;
 }
 
 #chat-toggle:hover {
     transform: translateY(-4px) scale(1.06);
-    box-shadow:
-        0 16px 34px rgba(0,0,0,0.22),
-        0 6px 14px rgba(0,0,0,0.10);
 }
 
-#chat-toggle:active {
-    transform: scale(0.96);
+/* 🔥 TOOLTIP MEJORADO (CLARCK) */
+.chat-tooltip {
+    position: absolute;
+    bottom: 110%;
+    right: 0;
+    background: var(--color-oscuro);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    white-space: nowrap;
+    border-left: 4px solid var(--color-primario);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: 0.3px;
+    
+    /* Estado inicial */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.95);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
 }
 
-@keyframes botFloat {
-    0%   { transform: translateY(0px); }
-    50%  { transform: translateY(-6px); }
-    100% { transform: translateY(0px); }
+/* Flechita */
+.chat-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    right: 20px;
+    border-width: 7px;
+    border-style: solid;
+    border-color: var(--color-oscuro) transparent transparent transparent;
 }
 
-/* 🔥 CHAT FLOTANTE */
+/* 🔥 ESTILO DINÁMICO DE CLARCK (Texto en Amarillo con Brillo) */
+.chat-tooltip b {
+    color: var(--color-primario);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(255, 204, 0, 0.4); /* Efecto Neón sutil */
+}
+
+/* Clase para activar con JavaScript */
+.tooltip-visible {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) scale(1) !important;
+}
+
+/* --- RESTO DEL CHAT --- */
+
 .chat-container { 
     position: fixed;
     bottom: 90px;
@@ -188,26 +220,19 @@ body {
     pointer-events: auto;
 }
 
-/* HEADER */
 header { 
     flex-shrink: 0; 
     background: linear-gradient(135deg, #1A1A1A, #000); 
     color: var(--color-primario); 
     padding: 16px; 
-    padding-top: calc(16px + env(safe-area-inset-top)); 
     text-align: center; 
     border-bottom: 3px solid var(--color-primario);
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    position: relative; /* Para posicionar el botón X */
+    position: relative;
 }
 
-header h2 { 
-    margin: 0; 
-    font-size: 1rem; 
-    letter-spacing: 1px;
-}
+header h2 { margin: 0; font-size: 1rem; letter-spacing: 1px;}
 
-/* 🆕 BOTÓN CERRAR (Invisible por defecto, solo para móviles) */
 #close-chat {
     display: none;
     position: absolute;
@@ -218,13 +243,9 @@ header h2 {
     font-weight: bold;
     cursor: pointer;
     color: var(--color-primario);
-    padding: 5px;
 }
 
-/* 🔥 ESTADO ANIMADO */
-#status span {
-    animation: pulse 1.5s infinite;
-}
+#status span { animation: pulse 1.5s infinite; }
 
 @keyframes pulse {
     0% { opacity: 1; }
@@ -232,7 +253,6 @@ header h2 {
     100% { opacity: 1; }
 }
 
-/* CHAT */
 .chat-box { 
     flex: 1; 
     padding: 14px; 
@@ -242,17 +262,9 @@ header h2 {
     gap: 10px; 
 }
 
-/* 🔥 SCROLL BONITO */
-.chat-box::-webkit-scrollbar {
-    width: 6px;
-}
+.chat-box::-webkit-scrollbar { width: 6px; }
+.chat-box::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
 
-.chat-box::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 10px;
-}
-
-/* MENSAJES */
 .message { 
     padding: 10px 14px; 
     border-radius: 16px; 
@@ -263,33 +275,16 @@ header h2 {
     word-wrap: break-word;
 }
 
-/* 🔥 CORRECCIÓN PARA IMÁGENES */
 .img-chat {
     max-width: 100%; 
     max-height: 250px; 
     border-radius: 10px;
-    margin-top: 5px;
-    display: block;
     object-fit: contain; 
 }
 
-/* USUARIO */
-.user { 
-    align-self: flex-end; 
-    background: var(--color-primario); 
-    color: black;
-    border-bottom-right-radius: 4px;
-}
+.user { align-self: flex-end; background: var(--color-primario); color: black; border-bottom-right-radius: 4px; }
+.bot { align-self: flex-start; background: #fff; border: 1px solid #eee; border-bottom-left-radius: 4px; }
 
-/* BOT */
-.bot { 
-    align-self: flex-start; 
-    background: #fff; 
-    border: 1px solid #eee;
-    border-bottom-left-radius: 4px;
-}
-
-/* 🔥 TRIANGULITOS */
 .user::after {
     content: "";
     position: absolute;
@@ -314,223 +309,32 @@ header h2 {
     clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }
 
-/* 🔥 LINKS */
-.message a {
-    color: #007bff;
-    text-decoration: underline;
-    word-break: break-all;
-    display: inline-block;
-    margin-top: 5px;
-    padding: 5px 8px;
-    background: #f0f8ff;
-    border-radius: 6px;
-    transition: 0.2s;
-}
-
-/* 🔥 TYPING */
-.typing {
-    display: flex;
-    gap: 5px;
-    padding: 10px;
-}
-
-.typing span {
-    width: 6px;
-    height: 6px;
-    background: #999;
-    border-radius: 50%;
-    animation: bounce 1.2s infinite;
-}
-
+.typing { display: flex; gap: 5px; padding: 10px; }
+.typing span { width: 6px; height: 6px; background: #999; border-radius: 50%; animation: bounce 1.2s infinite; }
 .typing span:nth-child(2) { animation-delay: 0.2s; }
 .typing span:nth-child(3) { animation-delay: 0.4s; }
 
-@keyframes bounce {
-    0%, 80%, 100% { transform: scale(0); }
-    40% { transform: scale(1); }
-}
+@keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
 
-/* INPUT AREA */
 .input-area { 
-    flex-shrink: 0; 
-    padding: 12px; 
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    border-top: 1px solid #eee; 
-    display: flex; 
-    align-items: center;
-    gap: 8px; 
-    background: #fff;
+    flex-shrink: 0; padding: 12px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 8px; background: #fff;
 }
 
-input { 
-    flex: 1; 
-    min-width: 0; 
-    padding: 10px; 
-    border-radius: 20px; 
-    border: 1px solid #ddd;
-    background: #f9f9f9;
-}
+input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; background: #f9f9f9; }
+input:focus { border-color: var(--color-primario); outline: none; }
 
-input:focus {
-    border-color: var(--color-primario);
-    outline: none;
-}
-
-/* BOTONES */
 button { 
-    flex-shrink: 0;
-    padding: 8px 14px; 
-    border-radius: 20px; 
-    background: var(--color-oscuro); 
-    color: var(--color-primario);
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    transition: all 0.2s;
-    font-weight: bold;
+    flex-shrink: 0; padding: 8px 14px; border-radius: 20px; background: var(--color-oscuro); color: var(--color-primario); border: none; cursor: pointer; font-weight: bold;
 }
 
-button:hover {
-    transform: scale(1.05);
-}
+@keyframes botFloat { 0% { transform: translateY(0px); } 50% { transform: translateY(-6px); } 100% { transform: translateY(0px); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-/* OPCIONES */
-.menu-opciones-container {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.btn-opcion-upn {
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    background: #fff;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-/* ANIMACIÓN */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* 📱 RESPONSIVE - AJUSTADO PARA CELULAR */
+/* 📱 RESPONSIVE */
 @media (max-width: 600px) {
-    .welcome-content h1 { font-size: 1.8rem; }
-    .welcome-content p { font-size: 1rem; }
-
-    .chat-arrow-pointer {
-        right: 15px;
-        bottom: 85px;
-    }
-
-    .chat-container {
-        width: 100% !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        height: 100dvh !important; 
-        border-radius: 0 !important;
-        z-index: 2000;
-    }
-
-    #close-chat {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        font-size: 18px; 
-        line-height: 1;
-        background: rgba(255, 255, 255, 0.1); 
-        border-radius: 50%; 
-        transition: background 0.2s;
-    }
-    
-    #close-chat:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .chat-container.active + #chat-toggle,
-    .chat-container.active ~ .chat-arrow-pointer {
-        display: none !important;
-    }
-
-    #chat-toggle {
-        right: 15px;
-        bottom: 15px;
-    }
+    .chat-container { width: 100% !important; right: 0 !important; bottom: 0 !important; height: 100dvh !important; border-radius: 0 !important; z-index: 2000; }
+    #close-chat { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
+    .chat-container.active + .chat-wrapper, .chat-container.active ~ .chat-arrow-pointer { display: none !important; }
 }
 
-.hora {
-    font-size: 10px;
-    color: #888;
-    text-align: right;
-    margin-top: 4px;
-}
-
-/* adicional*/
-
-/* Contenedor relativo para posicionar el tooltip */
-.chat-wrapper {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    z-index: 1001; /* Asegura que esté sobre todo */
-}
-
-/* Reajustamos el botón (quitamos el fixed de aquí porque ya lo tiene el wrapper) */
-#chat-toggle {
-    position: relative;
-    bottom: 0;
-    right: 0;
-    /* ... (mantén tus otros estilos de tamaño y transparencia aquí) */
-}
-
-/* 🔥 TOOLTIP PROFESIONAL */
-.chat-tooltip {
-    position: absolute;
-    bottom: 110%; /* Aparece arriba del robot */
-    right: 0;
-    background: var(--color-oscuro);
-    color: white;
-    padding: 8px 15px;
-    border-radius: 10px;
-    font-size: 13px;
-    white-space: nowrap;
-    border-left: 3px solid var(--color-primario); /* Detalle de marca */
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    
-    /* Animación inicial */
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(10px);
-    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-/* Flechita del tooltip */
-.chat-tooltip::after {
-    content: "";
-    position: absolute;
-    top: 100%;
-    right: 20px;
-    border-width: 6px;
-    border-style: solid;
-    border-color: var(--color-oscuro) transparent transparent transparent;
-}
-
-/* 🔥 EFECTO AL PASAR EL MOUSE */
-.chat-wrapper:hover .chat-tooltip {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}
-
-/* Negrita personalizada para Clarck */
-.chat-tooltip b {
-    color: var(--color-primario);
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
+.hora { font-size: 10px; color: #888; text-align: right; margin-top: 4px; }
