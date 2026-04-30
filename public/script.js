@@ -12,11 +12,11 @@ let conversacionIniciada = false;
 let enviando = false;
 let archivoPendiente = null;
 
-/* 🧠 MEMORIA DEL CHAT: Guardamos los últimos mensajes */
+/* 🧠 MEMORIA DEL CHAT */
 let historialMensajes = [];
 
 /* =========================
-    🔔 NOTIFICACIONES
+   🔔 NOTIFICACIONES
 ========================= */
 function solicitarPermisoNotificaciones() {
     if ("Notification" in window && Notification.permission !== "granted") {
@@ -38,7 +38,7 @@ function mostrarNotificacion(mensaje) {
 }
 
 /* =========================
-    🕒 FORMATO HORA
+   🕒 HORA
 ========================= */
 function obtenerHora() {
     const ahora = new Date();
@@ -49,7 +49,7 @@ function obtenerHora() {
 }
 
 /* =========================
-    🔥 MENSAJE UNIFICADO
+   🔥 MENSAJE BIENVENIDA
 ========================= */
 const MENSAJE_BIENVENIDA = `
 👋 Bienvenido al asistente universitario.<br><br>
@@ -58,7 +58,7 @@ Ingresa tu código de alumno.<br><br>
 `;
 
 /* =========================
-    🔥 SCROLL SUAVE
+   🔥 SCROLL
 ========================= */
 function scrollToBottom() {
     chatBox.scrollTo({
@@ -68,7 +68,7 @@ function scrollToBottom() {
 }
 
 /* =========================
-    🔥 TYPING IA
+   🔥 TYPING
 ========================= */
 function mostrarTyping() {
     const div = document.createElement("div");
@@ -91,7 +91,7 @@ function quitarTyping() {
 }
 
 /* =========================
-    🔥 1. INACTIVIDAD (SINCRONIZADO A 3 MIN + 30 SEG)
+   🔥 INACTIVIDAD
 ========================= */
 function iniciarTemporizadores() {
     if (!conversacionIniciada) return;
@@ -99,12 +99,10 @@ function iniciarTemporizadores() {
     clearTimeout(avisoTimer);
     clearTimeout(cierreTimer);
 
-    // CORREGIDO: Primer aviso a los 3 minutos (180,000 ms)
     avisoTimer = setTimeout(() => {
-        appendMessage('bot', "¿Sigues ahí? 👀 Estoy atento para continuar ayudándote.");
+        appendMessage('bot', "¿Sigues ahí? 👀 Estoy atento para continuar ayudándote. Escríbeme cualquier duda adicional o escribe menú ");
     }, 180000);
 
-    // CORREGIDO: Cierre a los 3.5 minutos (210,000 ms) para sincronizar con backend
     cierreTimer = setTimeout(() => {
         const URL_FORM = "https://docs.google.com/forms/d/e/1FAIpQLSdwz-LSX_jKUlEg9MVv9rvKYVZhTsKQop709vmc1PjH5hVytQ/viewform?usp=dialog";
 
@@ -115,17 +113,16 @@ function iniciarTemporizadores() {
             👉 <a href="${URL_FORM}" target="_blank">Evaluar el Chatbot</a>
         `);
 
-        // Sincronizado con la ruta de reset del servidor
         fetch('/api/chat/reset', { method: 'POST' });
-        
+
         conversacionIniciada = false;
-        historialMensajes = []; 
+        historialMensajes = [];
 
     }, 210000);
 }
 
 /* =========================
-    🔥 FORMATEO BOT
+   🔥 FORMATEO BOT
 ========================= */
 function formatearTextoBot(texto) {
     if (!texto) return '';
@@ -136,7 +133,7 @@ function formatearTextoBot(texto) {
 }
 
 /* =========================
-    💬 MENSAJE NORMAL
+   💬 MENSAJE NORMAL
 ========================= */
 function appendMessage(sender, text) {
     const msgDiv = document.createElement('div');
@@ -149,9 +146,7 @@ function appendMessage(sender, text) {
             ${formatearTextoBot(text)}
             <div class="hora">${hora}</div>
         `;
-
         mostrarNotificacion(text);
-
     } else {
         msgDiv.innerHTML = `
             ${text}
@@ -162,7 +157,6 @@ function appendMessage(sender, text) {
     chatBox.appendChild(msgDiv);
     scrollToBottom();
 
-    // No reiniciar timers si es un mensaje de sistema de inactividad
     if (!text.includes("¿Sigues ahí?") &&
         !text.includes("No hemos tenido respuesta")) {
         iniciarTemporizadores();
@@ -170,7 +164,7 @@ function appendMessage(sender, text) {
 }
 
 /* =========================
-    🔥 NUEVO EFECTO ESCRITURA BOT
+   ✍️ EFECTO ESCRITURA
 ========================= */
 function appendMessageTypingEffect(textoCompleto, velocidad = 14) {
     return new Promise((resolve) => {
@@ -180,6 +174,7 @@ function appendMessageTypingEffect(textoCompleto, velocidad = 14) {
 
         const contenido = document.createElement('div');
         const horaDiv = document.createElement('div');
+
         horaDiv.className = "hora";
         horaDiv.innerText = obtenerHora();
 
@@ -192,7 +187,6 @@ function appendMessageTypingEffect(textoCompleto, velocidad = 14) {
         mostrarNotificacion(textoCompleto);
 
         const texto = formatearTextoBot(textoCompleto);
-
         let i = 0;
 
         function escribir() {
@@ -211,7 +205,9 @@ function appendMessageTypingEffect(textoCompleto, velocidad = 14) {
     });
 }
 
-/* 🆕 NUEVO: mostrar imagen en burbuja */
+/* =========================
+   🖼️ IMAGEN EN CHAT
+========================= */
 function appendImage(sender, imageUrl) {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message', sender);
@@ -228,7 +224,7 @@ function appendImage(sender, imageUrl) {
 }
 
 /* =========================
-    🔥 3. OPCIONES
+   🔥 OPCIONES
 ========================= */
 function renderOptions(options) {
     if (!options || options.length === 0) return;
@@ -247,7 +243,7 @@ function renderOptions(options) {
         btn.onclick = () => {
             conversacionIniciada = true;
             appendMessage('user', opt.texto);
-            sendMessage(null, opt.id, opt.texto); 
+            sendMessage(null, opt.id, opt.texto);
             optionsContainer.remove();
         };
 
@@ -259,7 +255,7 @@ function renderOptions(options) {
 }
 
 /* =========================
-    🔥 4. ENVÍO UNIFICADO
+   🚀 ENVÍO
 ========================= */
 async function sendMessage(text, opcionId = null, textoOpcion = null) {
 
@@ -274,16 +270,45 @@ async function sendMessage(text, opcionId = null, textoOpcion = null) {
     if (opcionId) {
         formData.append('opcionId', opcionId);
     } else if (text) {
+
         const textoMin = text.toLowerCase();
-        const temasClave = ['pagos', 'bachiller', 'titulo', 'maestria', 'inasistencias', 'procesos', 'cursos', 'malla', 'sunedu', 'reclamo'];
-        const temaDetectado = temasClave.find(tema => textoMin.includes(tema));
-        
+
+        const temasClave = [
+            'pagos', 'bachiller', 'titulo',
+            'maestria', 'inasistencias',
+            'procesos', 'cursos', 'malla',
+            'sunedu', 'reclamo'
+        ];
+
+        const temaDetectado = temasClave.find(tema =>
+            textoMin.includes(tema)
+        );
+
         if (temaDetectado) {
             preguntaFinal = `Responde brevemente sobre ${temaDetectado}: ${text}`;
         }
+
         if (textoMin.includes("menú") || textoMin.includes("regresar")) {
             preguntaFinal = "menú";
-            historialMensajes = []; 
+            historialMensajes = [];
+        }
+
+        /* 🔥 NUEVO BLOQUE PARA ANALIZAR IMAGEN */
+        if (
+            archivoPendiente &&
+            (
+                textoMin.includes("analiza") ||
+                textoMin.includes("analizar") ||
+                textoMin.includes("revisa") ||
+                textoMin.includes("imagen") ||
+                textoMin.includes("foto") ||
+                textoMin.includes("captura") ||
+                textoMin.includes("que significa") ||
+                textoMin.includes("qué significa")
+            )
+        ) {
+            preguntaFinal =
+                `Analiza detalladamente la imagen adjunta y explica qué contiene. Usuario pregunta: ${text}`;
         }
     }
 
@@ -303,11 +328,14 @@ async function sendMessage(text, opcionId = null, textoOpcion = null) {
         });
 
         const data = await response.json();
+
         quitarTyping();
         archivoPendiente = null;
 
         if (data.respuesta) {
+
             const respuestaLower = data.respuesta.toLowerCase();
+
             const requiereTextoDirecto =
                 respuestaLower.includes("ingresa tu código") ||
                 respuestaLower.includes("código de alumno") ||
@@ -316,14 +344,24 @@ async function sendMessage(text, opcionId = null, textoOpcion = null) {
                 respuestaLower.includes("para iniciar la demostración");
 
             if (requiereTextoDirecto) {
+
                 appendMessage('bot', data.respuesta);
                 conversacionIniciada = false;
-                historialMensajes = []; 
+                historialMensajes = [];
+
             } else {
+
                 conversacionIniciada = true;
-                
-                historialMensajes.push({ role: "user", content: preguntaFinal });
-                historialMensajes.push({ role: "assistant", content: data.respuesta });
+
+                historialMensajes.push({
+                    role: "user",
+                    content: preguntaFinal
+                });
+
+                historialMensajes.push({
+                    role: "assistant",
+                    content: data.respuesta
+                });
 
                 if (historialMensajes.length > 6) {
                     historialMensajes = historialMensajes.slice(-6);
@@ -347,10 +385,11 @@ async function sendMessage(text, opcionId = null, textoOpcion = null) {
 }
 
 /* =========================
-    🔥 5. EVENTOS
+   🎯 EVENTOS
 ========================= */
 sendBtn.onclick = () => {
     const text = userInput.value.trim();
+
     if (text || archivoPendiente) {
         if (text) appendMessage('user', text);
         sendMessage(text);
@@ -366,9 +405,12 @@ if (imageBtn) {
     imageBtn.onclick = () => imageInput.click();
 }
 
-/* 🆕 Captura de imagen */
+/* =========================
+   🖼️ SUBIR IMAGEN
+========================= */
 if (imageInput) {
     imageInput.addEventListener('change', () => {
+
         const file = imageInput.files[0];
         if (!file) return;
 
@@ -379,10 +421,12 @@ if (imageInput) {
         }
 
         archivoPendiente = file;
+
         const reader = new FileReader();
 
         reader.onload = (e) => {
             appendImage('user', e.target.result);
+
             requestAnimationFrame(() => {
                 appendMessage(
                     'bot',
@@ -397,10 +441,11 @@ if (imageInput) {
 }
 
 /* =========================
-    🔥 MENSAJE INICIAL
+   🔥 INICIO
 ========================= */
 window.addEventListener("load", () => {
     solicitarPermisoNotificaciones();
+
     requestAnimationFrame(() => {
         appendMessage('bot', MENSAJE_BIENVENIDA);
     });

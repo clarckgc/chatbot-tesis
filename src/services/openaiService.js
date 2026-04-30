@@ -15,25 +15,39 @@ async function preguntarIA(pregunta, contexto, imagenData = null, historial = []
 
         const systemPrompt = `
             Eres el Asistente Virtual de la UPN. Tu misión es ayudar a los alumnos con información administrativa precisa.
-            
+
             USA ESTA INFORMACIÓN OFICIAL:
             ${baseConocimiento}
 
             REGLAS DE RESPUESTA:
-            1. Responde con un tono amable, servicial y profesional.
-            2. Proporciona la respuesta de forma redactada (párrafos), NO como una lista técnica.
-            3. Si el alumno adjunta una imagen (como un recibo, captura de pantalla o carnet), analízala y relaciónala con la normativa de la universidad.
-            4. Si el alumno pregunta por algo que no está en la información oficial, indícale que puede revisar el portal MiMundoUPN: ${contexto.enlace_portal}.
-            5. No menciones nombres de variables internas. Habla de forma natural.
+            1. Responde con tono amable, claro y profesional.
+            2. Redacta respuestas naturales, no técnicas.
+            3. Si el usuario adjunta una imagen, DEBES analizar visualmente su contenido.
+            4. Puedes identificar:
+               - recibos de pago
+               - vouchers
+               - capturas de pantalla
+               - errores del portal
+               - documentos
+               - carnets
+               - horarios
+               - textos visibles
+            5. Si hay texto en la imagen, léelo y explícalo.
+            6. Si no se distingue bien, indica que la imagen está borrosa.
+            7. Si el usuario escribe "analiza la imagen", "revisa imagen", "que ves", etc, interpreta automáticamente la imagen.
+            8. Si preguntan algo fuera del contexto oficial, deriva al portal MiMundoUPN: ${contexto.enlace_portal}
+            9. Nunca digas "no puedo ver imágenes" porque SÍ puedes analizarlas.
         `;
 
         let userContent = [];
 
+        // TEXTO DEL USUARIO
         userContent.push({
             type: "text",
-            text: pregunta || "Analiza la imagen adjunta según el contexto de la universidad."
+            text: pregunta || "Analiza detalladamente la imagen adjunta."
         });
 
+        // IMAGEN
         if (imagenData && imagenData.inlineData) {
             userContent.push({
                 type: "image_url",
@@ -43,27 +57,27 @@ async function preguntarIA(pregunta, contexto, imagenData = null, historial = []
             });
         }
 
-        // Construimos el arreglo de mensajes incluyendo el historial para mantener el contexto
+        // MENSAJES COMPLETOS
         const mensajesCompletos = [
             { role: "system", content: systemPrompt },
-            ...historial, // Insertamos los mensajes previos aquí
+            ...historial,
             { role: "user", content: userContent }
         ];
 
         const response = await axios.post(
             'https://api.openai.com/v1/chat/completions',
             {
-                model: "gpt-4o-mini",
+                model: "gpt-4o",
                 messages: mensajesCompletos,
-                temperature: 0.4,
-                max_tokens: 300
+                temperature: 0.3,
+                max_tokens: 500
             },
             {
                 headers: {
                     Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
                     'Content-Type': 'application/json'
                 },
-                timeout: 20000
+                timeout: 30000
             }
         );
 
@@ -75,7 +89,7 @@ async function preguntarIA(pregunta, contexto, imagenData = null, historial = []
             error.response ? error.response.data : error.message
         );
 
-        return "Lo siento, tuve un inconveniente al consultar la información. Por favor, intenta de nuevo en unos momentos.";
+        return "Lo siento, ocurrió un inconveniente al analizar la información o la imagen. Intenta nuevamente en unos momentos.";
     }
 }
 
