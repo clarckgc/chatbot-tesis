@@ -100,7 +100,7 @@ function iniciarTemporizadores() {
     clearTimeout(cierreTimer);
 
     avisoTimer = setTimeout(() => {
-        appendMessage('bot', "¿Sigues ahí? 👀 Estoy atento para continuar ayudándote. Escríbeme cualquier duda adicional o escribe menú ");
+        appendMessage('bot', "¿Sigues ahí? 👀 Estoy atento para continuar ayudándote. Escríbeme cualquier duda adicional o escribe menú. ");
     }, 180000);
 
     cierreTimer = setTimeout(() => {

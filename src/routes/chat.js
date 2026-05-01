@@ -44,6 +44,8 @@ function resetChat(req) {
         esperandoDetalleCaso: false,
         ultimoMensaje: Date.now()
     };
+    // Asegurar que el reset se guarde inmediatamente
+    req.session.save();
 }
 
 const opcionesMenu = [
@@ -206,6 +208,8 @@ router.post('/', upload.single('file'), async (req, res) => {
         }
 
         estadoChat.ultimoMensaje = ahora;
+        // CORRECCIÓN: Guardar sesión tras actualizar timestamp
+        req.session.save();
 
         const pregunta = req.body.pregunta || '';
         const opcionId = req.body.opcionId || '';
@@ -221,6 +225,9 @@ router.post('/', upload.single('file'), async (req, res) => {
                 estadoChat.tieneCodigo = true;
                 estadoChat.codigoAlumno = entrada;
                 estadoChat.nombreAlumno = alumno.nombre;
+                
+                // CORRECCIÓN: Forzar el guardado de los datos del alumno en la sesión
+                req.session.save();
 
                 return res.json({
                     respuesta:
@@ -308,6 +315,7 @@ router.post('/', upload.single('file'), async (req, res) => {
 
                 case '6':
                     estadoChat.esperandoDetalleCaso = true;
+                    req.session.save(); // Guardar cambio de estado
 
                     respuestaMenu =
                         `📝 **Registrar Solicitud o Queja:**<br><br>` +
@@ -326,6 +334,7 @@ router.post('/', upload.single('file'), async (req, res) => {
         if (estadoChat.esperandoDetalleCaso && pregunta) {
             const nro = await registrarCaso(estadoChat.codigoAlumno, pregunta);
             estadoChat.esperandoDetalleCaso = false;
+            req.session.save(); // Guardar cambio de estado
 
             return res.json({
                 respuesta: `✅ Tu caso fue registrado correctamente.<br><br>📌 Número de seguimiento: **${nro}**${MSJ_RETORNO}`,
